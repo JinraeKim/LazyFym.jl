@@ -63,9 +63,9 @@ function test()
     x0 = LazyFym.initial_condition(env)
     # simulator
     trajs(x0, ts) = Sim(env, x0, ts, ẋ, update)
-    @time trajs(x0, ts_reverse) |> extract  # reverse time test
+    @time trajs(x0, ts_reverse) |> evaluate  # reverse time test
     # reuse simulator
-    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> extract
+    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> evaluate
     # exact solution
     x1_exact = function(t)
         c = gain(t)
