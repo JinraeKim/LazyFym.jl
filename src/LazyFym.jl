@@ -2,13 +2,14 @@ module LazyFym
 
 using Transducers
 
+# Types
 export FymEnv
-
+# convenient APIs
 export ∫
+export Sim
+# for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated
-
-export Sim
 
 
 ## Types
@@ -41,10 +42,10 @@ end
 
 ## dynamics
 # default (for test)
-function ẋ(env::FymEnv, x::Dict, t)
+function ẋ(env::FymEnv, x, t)
     names = system_names(env)
     zero_values = names |> Map(name -> zero(x[name]))
-    return zip(names, zero_values) |> Dict
+    return (; zip(names, zero_values)...)  # NamedTuple
 end
 
 ## update
@@ -63,11 +64,13 @@ end
 function preprocess(env::FymEnv, x0)
     sys_names = system_names(env)
     sys_sizes = sys_names |> Map(name -> size(x0[name]))
-    sys_size_dict = zip(sys_names, sys_sizes) |> Dict
+    # sys_size_dict = zip(sys_names, sys_sizes) |> Dict
+    sys_size_dict = (; zip(sys_names, sys_sizes)...)  # NamedTuple
     sys_accumulated_lengths = sys_sizes |> Map(size -> prod(size)) |> Scan(+) |> collect
     sys_indices_tmp = [0, sys_accumulated_lengths...] |> Consecutive(length(sys_accumulated_lengths); step=1)
     sys_indices = zip(sys_indices_tmp...) |> MapSplat((x, y) -> x+1:y) |> collect
-    sys_index_dict = zip(sys_names, sys_indices) |> Dict
+    # sys_index_dict = zip(sys_names, sys_indices) |> Dict
+    sys_index_dict = (; zip(sys_names, sys_indices)...)  # NamedTuple
     return sys_index_dict, sys_size_dict
 end
 # raw view
@@ -88,19 +91,32 @@ function process(_x, sys_index_dict, sys_size_dict)
                              sys_size_dict[name]...)),
         ]
     )
-    x = zip(sys_names, sys_values) |> Dict
+    # x = zip(sys_names, sys_values) |> Dict
+    x = (; zip(sys_names, sys_values)...)  # NamedTuple
     return x
+end
+# size
+function Base.size(env::FymEnv, x0)
+    sys_names = system_names(env)
+    if sys_names == []
+        return size(x0)
+    else
+        sys_sizes = sys_names |> Map(name -> size(getfield(env, name), x0[name]))
+        # return zip(sys_names, sys_sizes) |> Dict
+        return (; zip(sys_names, sys_sizes)...)  # NamedTuple
+    end
 end
 # initial condition
 function initial_condition(env::FymEnv)
     names = LazyFym.system_names(env)
     values = names |> Map(name -> initial_condition(getfield(env, name)))
-    return zip(names, values) |> Dict
+    # return zip(names, values) |> Dict
+    return (; zip(names, values)...)  # NamedTuple
 end
 
 ## Simulator
 # Transducers
-_Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
+Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     Δt = t_next - t
     datum, x_next = update(env, ẋ, x, t, Δt)
     return datum, (x_next, t_next)
@@ -108,8 +124,8 @@ end
 # simulation
 Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>,
                                              [ts, Drop(1),
-                                              _Step(env, x0, ts[1],
-                                                    ẋ, update)])
+                                              Step(env, x0, ts[1],
+                                                   ẋ, update)])
 
 
 end  # module
