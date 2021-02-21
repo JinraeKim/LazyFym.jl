@@ -1,5 +1,6 @@
 # LazyFym
 **LazyFym** is a general purpose simulator for dynamical systems.
+* I'm too lazy to run a simulation but eager to create a simulator package.*
 ## NOTICE
 This package is **work-in-progress**.
 
