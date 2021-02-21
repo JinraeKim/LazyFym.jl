@@ -1,8 +1,9 @@
 # LazyFym
 **LazyFym** is a general-purpose simulator for dynamical systems.
 I'm too *lazy* to run a simulation but *eager* to make a better simulator.
-## NOTICE
+## Notes
 This package is **work-in-progress**.
+The origin of the name `Fym` is from the previous versions of flight (but also general-purpose) simulators [fym](https://github.com/fdcl-nrf/fym) and [FymEnvs.jl](https://github.com/fdcl-nrf/FymEnvs.jl).
 
 ## Features
 ### Lazy evaluation
