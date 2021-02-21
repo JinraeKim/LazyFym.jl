@@ -7,6 +7,7 @@ export FymEnv
 # convenient APIs
 export ∫
 export Sim
+export extract
 # for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated
@@ -29,6 +30,7 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
+    # TODO: preprocess data everytime seems bad
     sys_index_nt, sys_size_nt = preprocess(env, x)
     _x = raw(x, sys_index_nt)
     _ẋ = function(_x, t, args...; kwargs...)
@@ -93,7 +95,7 @@ function process(_x, sys_index_nt, sys_size_nt)
     x = (; zip(sys_names, sys_values)...)  # NamedTuple
     return x
 end
-# size
+# size  # TODO: for nested env
 function Base.size(env::FymEnv, x0)
     sys_names = system_names(env)
     if sys_names == []
@@ -110,6 +112,14 @@ function initial_condition(env::FymEnv)
     values = names |> Map(name -> initial_condition(getfield(env, name)))
     # return zip(names, values) |> Dict
     return (; zip(names, values)...)  # NamedTuple
+end
+# trajs -> NamedTuple
+function extract(trajs)
+    _trajs = trajs |> collect
+    all_keys = union([keys(traj) for traj in _trajs]...)
+    get_values(key) = [get(traj, key, missing) for traj in _trajs]
+    all_values = all_keys |> Map(get_values)
+    return (; zip(all_keys, all_values)...)  # NamedTuple
 end
 
 ## Simulator

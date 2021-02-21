@@ -30,7 +30,10 @@ function update(env::Env, ẋ, x, t, Δt)
     _datum = Dict(:x1 => x.sys1, :x2 => x.sys2, :t => t)
     c = gain(t)
     x_next = ∫(env, ẋ, x, t, Δt; c=c)  # default method: RK4
-    _datum[:x_next] = x_next  # if necessary
+    # Recording data after update is someetimes required
+    # e.g., integrated reward in integral reinforcement learning
+    _datum[:x1_next] = x_next.sys1
+    _datum[:x2_next] = x_next.sys2
     datum = (; zip(keys(_datum), values(_datum))...)  # to make it immutable; not necessary
     return datum, x_next
 end
@@ -40,14 +43,6 @@ end
 # terminal condition
 function is_terminated(datum)
     return norm(datum.x1) < 1e-6
-end
-# trajs -> NamedTuple
-function observe(trajs)
-    _trajs = trajs |> collect
-    all_keys = union([keys(traj) for traj in _trajs]...)
-    get_values(key) = [get(traj, key, missing) for traj in _trajs]
-    all_values = all_keys |> Map(get_values)
-    return (; zip(all_keys, all_values)...)  # NamedTuple
 end
 # initial condition
 LazyFym.initial_condition(sys::Sys1) = [1, 2, 3]
@@ -68,9 +63,9 @@ function test()
     x0 = LazyFym.initial_condition(env)
     # simulator
     trajs(x0, ts) = Sim(env, x0, ts, ẋ, update)
-    @time trajs(x0, ts_reverse) |> observe  # reverse time test
+    @time trajs(x0, ts_reverse) |> extract  # reverse time test
     # reuse simulator
-    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> observe
+    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> extract
     # exact solution
     x1_exact = function(t)
         c = gain(t)
