@@ -1,7 +1,10 @@
 # LazyFym
-**LazyFym** is a general purpose simulator for dynamical systems.
-## NOTICE
+**LazyFym** is a general-purpose simulator for dynamical systems.
+I'm too *lazy* to run a simulation but *eager* to make a better simulator.
+## Notes
 This package is **work-in-progress**.
+The origin of the name `Fym` is from the previous versions of flight (but also general-purpose) simulators:
+[fym](https://github.com/fdcl-nrf/fym) in `Python` and [FymEnvs.jl](https://github.com/fdcl-nrf/FymEnvs.jl) in `Julia`.
 
 ## Features
 ### Lazy evaluation
@@ -11,18 +14,16 @@ You may possibly save **your custom simulator** and load it to reproduce
 simulation data and perform simulation with different configurations.
 You can reuse your simulator with various initial values and time span.
 ### Flexible usage pattern
-Unlike the previous versions of `fym` simulators, [fym](https://github.com/fdcl-nrf/fym) and [FymEnvs](https://github.com/fdcl-nrf/FymEnvs.jl),
-LazyFym barely restricts the forms of your custom systems and environments
-by avoding inheritance (`fym`) and class-like constructors (`FymEnvs`).
+LazyFym barely restricts the forms of your custom environments
+and provides general-purpose interface.
 ### Parallelism
 (It is expected that parallel simulation is easy with this package.
 Detailed explanation will be given after testing some examples.)
 
 ## Interface
-LazyFym provides two Types: 1) 'FymSys' and 2) 'FymEnv'.
-`FymSys` (probably) contains the information of dynamical system.
-`FymEnv` (probably) contains the information of the whole environment,
-consisting of `FymSys` systems.
+LazyFym provides a Type `FymEnv`.
+`FymEnv` contains the information of an environment (system),
+probably consisting of other `FymEnv`s as sub-environments (sub-systems).
 ### Quick start
 Examples including simulation with a custom environment
 can be found in directory `test`.
@@ -60,7 +61,10 @@ function update(env::Env, ẋ, x, t, Δt)
     _datum = Dict(:x1 => x.sys1, :x2 => x.sys2, :t => t)
     c = gain(t)
     x_next = ∫(env, ẋ, x, t, Δt; c=c)  # default method: RK4
-    _datum[:x_next] = x_next  # if necessary
+    # Recording data after update is someetimes required
+    # e.g., integrated reward in integral reinforcement learning
+    _datum[:x1_next] = x_next.sys1
+    _datum[:x2_next] = x_next.sys2
     datum = (; zip(keys(_datum), values(_datum))...)  # to make it immutable; not necessary
     return datum, x_next
 end
@@ -70,14 +74,6 @@ end
 # terminal condition
 function is_terminated(datum)
     return norm(datum.x1) < 1e-6
-end
-# trajs -> NamedTuple
-function observe(trajs)
-    _trajs = trajs |> collect
-    all_keys = union([keys(traj) for traj in _trajs]...)
-    get_values(key) = [get(traj, key, missing) for traj in _trajs]
-    all_values = all_keys |> Map(get_values)
-    return (; zip(all_keys, all_values)...)  # NamedTuple
 end
 # initial condition
 LazyFym.initial_condition(sys::Sys1) = [1, 2, 3]
@@ -98,9 +94,9 @@ function test()
     x0 = LazyFym.initial_condition(env)
     # simulator
     trajs(x0, ts) = Sim(env, x0, ts, ẋ, update)
-    @time trajs(x0, ts_reverse) |> observe  # reverse time test
+    @time trajs(x0, ts_reverse) |> evaluate  # reverse time test
     # reuse simulator
-    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> observe
+    @time res = trajs(x0, ts) |> TakeWhile(!is_terminated) |> evaluate
     # exact solution
     x1_exact = function(t)
         c = gain(t)
@@ -108,8 +104,7 @@ function test()
     end
     x1_exacts = res.t |> Map(x1_exact) |> collect
     ϵ = 1e-5
-    @test ([norm(res.x1[i] - x1_exacts[i])
-            for i in 1:length(x1_exacts)] |> maximum) < ϵ
+    @test ([norm(res.x1[i] - x1_exacts[i]) for i in 1:length(x1_exacts)] |> maximum) < ϵ
 end
 
 test()

@@ -7,6 +7,7 @@ export FymEnv
 # convenient APIs
 export ∫
 export Sim
+export evaluate
 # for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated
@@ -29,15 +30,16 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
-    sys_index_dict, sys_size_dict = preprocess(env, x)
-    _x = raw(x, sys_index_dict)
+    # TODO: preprocess data everytime seems bad
+    sys_index_nt, sys_size_nt = preprocess(env, x)
+    _x = raw(x, sys_index_nt)
     _ẋ = function(_x, t, args...; kwargs...)
-        x = process(_x, sys_index_dict, sys_size_dict)
+        x = process(_x, sys_index_nt, sys_size_nt)
         ẋ_evaluated = ẋ(env, x, t, args...; kwargs...)
-        return ẋ_raw = raw(ẋ_evaluated, sys_index_dict)
+        return ẋ_raw = raw(ẋ_evaluated, sys_index_nt)
     end
     _x_next = integrator(_ẋ, _x, t, Δt, args...; kwargs...)
-    return process(_x_next, sys_index_dict, sys_size_dict)
+    return process(_x_next, sys_index_nt, sys_size_nt)
 end
 
 ## dynamics
@@ -64,38 +66,36 @@ end
 function preprocess(env::FymEnv, x0)
     sys_names = system_names(env)
     sys_sizes = sys_names |> Map(name -> size(x0[name]))
-    # sys_size_dict = zip(sys_names, sys_sizes) |> Dict
-    sys_size_dict = (; zip(sys_names, sys_sizes)...)  # NamedTuple
+    sys_size_nt = (; zip(sys_names, sys_sizes)...)  # NamedTuple
     sys_accumulated_lengths = sys_sizes |> Map(size -> prod(size)) |> Scan(+) |> collect
     sys_indices_tmp = [0, sys_accumulated_lengths...] |> Consecutive(length(sys_accumulated_lengths); step=1)
     sys_indices = zip(sys_indices_tmp...) |> MapSplat((x, y) -> x+1:y) |> collect
-    # sys_index_dict = zip(sys_names, sys_indices) |> Dict
-    sys_index_dict = (; zip(sys_names, sys_indices)...)  # NamedTuple
-    return sys_index_dict, sys_size_dict
+    sys_index_nt = (; zip(sys_names, sys_indices)...)  # NamedTuple
+    return sys_index_nt, sys_size_nt
 end
 # raw view
-function raw(x, sys_index_dict)
-    _x = length(vcat(values(sys_index_dict)...)) |> zeros
-    for name in keys(sys_index_dict)
-        _x[sys_index_dict[name]] = x[name][:]
+function raw(x, sys_index_nt)
+    _x = length(vcat(values(sys_index_nt)...)) |> zeros
+    for name in keys(sys_index_nt)
+        _x[sys_index_nt[name]] = x[name][:]
     end
     return _x
 end
 # processed view
-function process(_x, sys_index_dict, sys_size_dict)
-    sys_names = keys(sys_size_dict) |> collect
+function process(_x, sys_index_nt, sys_size_nt)
+    sys_names = keys(sys_size_nt) |> collect
     sys_values = foldxl(|>,
         [
          sys_names,
-         Map(name -> reshape(_x[sys_index_dict[name]],
-                             sys_size_dict[name]...)),
+         Map(name -> reshape(_x[sys_index_nt[name]],
+                             sys_size_nt[name]...)),
         ]
     )
     # x = zip(sys_names, sys_values) |> Dict
     x = (; zip(sys_names, sys_values)...)  # NamedTuple
     return x
 end
-# size
+# size  # TODO: for nested env
 function Base.size(env::FymEnv, x0)
     sys_names = system_names(env)
     if sys_names == []
@@ -113,6 +113,14 @@ function initial_condition(env::FymEnv)
     # return zip(names, values) |> Dict
     return (; zip(names, values)...)  # NamedTuple
 end
+# trajs -> NamedTuple
+function evaluate(trajs)
+    _trajs = trajs |> collect
+    all_keys = union([keys(traj) for traj in _trajs]...)
+    get_values(key) = [get(traj, key, missing) for traj in _trajs]
+    all_values = all_keys |> Map(get_values)
+    return (; zip(all_keys, all_values)...)  # NamedTuple
+end
 
 ## Simulator
 # Transducers
@@ -122,10 +130,7 @@ Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     return datum, (x_next, t_next)
 end
 # simulation
-Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>,
-                                             [ts, Drop(1),
-                                              Step(env, x0, ts[1],
-                                                   ẋ, update)])
+Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
 
 
 end  # module
