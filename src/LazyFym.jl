@@ -103,39 +103,6 @@ _Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     return datum, (x_next, t_next)
 end
 # simulation
-"""
-# Example
-using FPFym
-using Transducers
-
-struct Env <: FymEnv
-    a
-end
-
-function ẋ(env::Env)
-    return (x, t; b=1) -> -(env.a * b) * x
-end
-
-function update(env::Env, ẋ, x, t, Δt)
-    datum = Dict(:x => x, :t => t)
-    b = t < 0.1 ? 1 : -1
-    x_next = ∫(env, ẋ, x, t, Δt; b=b)
-    datum[:x_next] = x_next
-    return datum, x_next
-end
-
-function is_terminated(datum)
-    return datum[:t] < 0.5
-end
-
-env = Env(2.0)
-t0 = 0.0
-tf = 1.0
-Δt = 0.01
-ts = t0:Δt:tf
-x0 = 1:3 |> collect
-@time traj = Sim(env, x0, ts, ẋ, update) |> TakeWhile(is_terminated) |> collect
-"""
 Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>,
                                              [ts, Drop(1),
                                               _Step(env, x0, ts[1],
