@@ -117,7 +117,8 @@ function test()
             for i in 1:length(x1_exacts)] |> maximum) < ϵ
 end
 
-test()```
+test()
+```
 ## Todo
 - [ ] Nested environments (like `fym` and `FymEnvs`)
 - [ ] Add an example of parallel simulation
