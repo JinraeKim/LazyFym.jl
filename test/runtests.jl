@@ -38,7 +38,7 @@ function gain(t)
 end
 # terminal condition
 function is_terminated(datum)
-    return datum[:t] < 50
+    return datum[:t] > 50
 end
 # trajs -> dict
 function observe(trajs)
@@ -71,7 +71,7 @@ function test()
     # simulator
     trajs(x0, ts) = foldxl(|>, [
                                 Sim(env, x0, ts, ẋ, update),
-                                TakeWhile(is_terminated),
+                                TakeWhile(!is_terminated),
                                ])
     @time trajs(x0, ts_reverse) |> observe  # reverse time test
     # reuse simulator
