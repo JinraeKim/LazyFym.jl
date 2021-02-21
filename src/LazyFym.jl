@@ -7,7 +7,7 @@ export FymEnv
 # convenient APIs
 export ∫
 export Sim
-export evaluate
+export evaluate, sequentialise
 # for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated
@@ -16,11 +16,12 @@ export evaluate
 ## Types
 abstract type FymEnv end
 
-## numerical integration
-# methods
+## Numerical integration
+# euler method
 function euler(_ẋ, _x, t, Δt, args...; kwargs...)
     return _x + Δt * _ẋ(_x, t, args...; kwargs...)
 end
+# rk4 method
 function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
     k1 = _ẋ(_x, t, args...; kwargs...)
     k2 = _ẋ(_x + k1*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
@@ -30,96 +31,17 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
-    # TODO: preprocess data everytime seems bad
-    sys_index_nt, sys_size_nt = preprocess(env, x)
-    _x = raw(x, sys_index_nt)
+    # TODO: preprocess data everytime may be bad for performance;
+    # for now it is left as unresolved
+    env_index_nt, env_size_nt = preprocess(env, x)
+    _x = raw(env, x)
     _ẋ = function(_x, t, args...; kwargs...)
-        x = process(_x, sys_index_nt, sys_size_nt)
+        x = process(_x, env_index_nt, env_size_nt)
         ẋ_evaluated = ẋ(env, x, t, args...; kwargs...)
-        return ẋ_raw = raw(ẋ_evaluated, sys_index_nt)
+        return ẋ_raw = raw(env, ẋ_evaluated)
     end
     _x_next = integrator(_ẋ, _x, t, Δt, args...; kwargs...)
-    return process(_x_next, sys_index_nt, sys_size_nt)
-end
-
-## dynamics
-# default (for test)
-function ẋ(env::FymEnv, x, t)
-    names = system_names(env)
-    zero_values = names |> Map(name -> zero(x[name]))
-    return (; zip(names, zero_values)...)  # NamedTuple
-end
-
-## update
-# default (for test)
-function update(env::FymEnv, ẋ, x, t, Δt)  # provided
-    datum = Dict(:state => x, :t => t)
-    x_next = ∫(env, ẋ, x, t, Δt)
-    return datum, x_next
-end
-
-## (internal) API
-# get names
-function system_names(env::FymEnv)
-    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: FymEnv]
-end
-function preprocess(env::FymEnv, x0)
-    sys_names = system_names(env)
-    sys_sizes = sys_names |> Map(name -> size(x0[name]))
-    sys_size_nt = (; zip(sys_names, sys_sizes)...)  # NamedTuple
-    sys_accumulated_lengths = sys_sizes |> Map(size -> prod(size)) |> Scan(+) |> collect
-    sys_indices_tmp = [0, sys_accumulated_lengths...] |> Consecutive(length(sys_accumulated_lengths); step=1)
-    sys_indices = zip(sys_indices_tmp...) |> MapSplat((x, y) -> x+1:y) |> collect
-    sys_index_nt = (; zip(sys_names, sys_indices)...)  # NamedTuple
-    return sys_index_nt, sys_size_nt
-end
-# raw view
-function raw(x, sys_index_nt)
-    _x = length(vcat(values(sys_index_nt)...)) |> zeros
-    for name in keys(sys_index_nt)
-        _x[sys_index_nt[name]] = x[name][:]
-    end
-    return _x
-end
-# processed view
-function process(_x, sys_index_nt, sys_size_nt)
-    sys_names = keys(sys_size_nt) |> collect
-    sys_values = foldxl(|>,
-        [
-         sys_names,
-         Map(name -> reshape(_x[sys_index_nt[name]],
-                             sys_size_nt[name]...)),
-        ]
-    )
-    # x = zip(sys_names, sys_values) |> Dict
-    x = (; zip(sys_names, sys_values)...)  # NamedTuple
-    return x
-end
-# size  # TODO: for nested env
-function Base.size(env::FymEnv, x0)
-    sys_names = system_names(env)
-    if sys_names == []
-        return size(x0)
-    else
-        sys_sizes = sys_names |> Map(name -> size(getfield(env, name), x0[name]))
-        # return zip(sys_names, sys_sizes) |> Dict
-        return (; zip(sys_names, sys_sizes)...)  # NamedTuple
-    end
-end
-# initial condition
-function initial_condition(env::FymEnv)
-    names = LazyFym.system_names(env)
-    values = names |> Map(name -> initial_condition(getfield(env, name)))
-    # return zip(names, values) |> Dict
-    return (; zip(names, values)...)  # NamedTuple
-end
-# trajs -> NamedTuple
-function evaluate(trajs)
-    _trajs = trajs |> collect
-    all_keys = union([keys(traj) for traj in _trajs]...)
-    get_values(key) = [get(traj, key, missing) for traj in _trajs]
-    all_values = all_keys |> Map(get_values)
-    return (; zip(all_keys, all_values)...)  # NamedTuple
+    return process(_x_next, env_index_nt, env_size_nt)
 end
 
 ## Simulator
@@ -131,6 +53,107 @@ Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
 end
 # simulation
 Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
+
+## Convenient tools
+# all-zero dynamics (for test)
+function ẋ(env::FymEnv, x, t)
+    env_names = names(env)
+    if env_names == []
+        return zero(x)
+    else
+        zero_values = env_names |> Map(name -> ẋ(getfield(env, name), x[name], t))
+        return (; zip(env_names, zero_values)...)  # NamedTuple
+    end
+end
+# default update (for test)
+function update(env::FymEnv, ẋ, x, t, Δt)  # provided
+    datum = Dict(:state => x, :t => t)
+    x_next = ∫(env, ẋ, x, t, Δt)
+    return datum, x_next
+end
+# automatic completion of initial condition
+function initial_condition(env::FymEnv)
+    env_names = LazyFym.names(env)
+    values = env_names |> Map(name -> initial_condition(getfield(env, name)))
+    return (; zip(env_names, values)...)  # NamedTuple
+end
+# trajs -> NamedTuple
+function evaluate(trajs)
+    _trajs = trajs |> collect
+    all_keys = union([keys(traj) for traj in _trajs]...)
+    get_values(key) = [get(traj, key, missing) for traj in _trajs]
+    all_values = all_keys |> Map(get_values)
+    return (; zip(all_keys, all_values)...)  # NamedTuple
+end
+# array in array -> array (the first dimension is added)
+function sequentialise(data)
+    return vcat([reshape(data[i], (1, size(data[i])...)) for i in 1:length(data)]...)
+end
+
+## Internal API
+# get names
+function Base.names(env::FymEnv)
+    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: FymEnv]
+end
+function preprocess(env::FymEnv, x0)
+    env_size_nt = size(env, x0)
+    env_flatten_length = flatten_length(env, x0)
+    env_index_nt = index(env, x0, 1:env_flatten_length)
+    return env_index_nt, env_size_nt
+end
+# raw view
+function raw(env, x)
+    env_names = names(env)
+    if env_names == []
+        return x
+    else
+        _x = env_names |> MapCat(name -> raw(getfield(env, name), x[name])) |> collect
+        return _x
+    end
+end
+# processed view
+function process(_x, env_index_nt, env_size_nt)
+    if typeof(env_index_nt) <: AbstractRange
+        return reshape(_x[env_index_nt], env_size_nt...)
+    else
+        index_names = keys(env_index_nt)
+        processed_values = index_names |> Map(name -> process(_x, env_index_nt[name], env_size_nt[name]))
+        return (; zip(index_names, processed_values)...)
+    end
+end
+# size
+function Base.size(env::FymEnv, x0)
+    env_names = names(env)
+    if env_names == []
+        return size(x0)
+    else
+        env_sizes = env_names |> Map(name -> size(getfield(env, name), x0[name]))
+        return (; zip(env_names, env_sizes)...)  # NamedTuple
+    end
+end
+# flatten length
+function flatten_length(env::FymEnv, x0)
+    env_names = names(env)
+    if env_names == []
+        return prod(size(x0))
+    else
+        return env_names |> Map(name -> flatten_length(getfield(env, name), x0[name])) |> sum
+    end
+end
+# index
+function index(env::FymEnv, x0, _range)
+    env_names = names(env)
+    if env_names == []
+        return _range
+    else
+        env_accumulated_flatten_lengths = env_names |> Map(name -> flatten_length(getfield(env, name), x0[name])) |> Scan(+) |> collect
+        range_first = first(_range)
+        env_ranges_tmp = (range_first-1) .+ [0, env_accumulated_flatten_lengths...] |> Consecutive(length(env_accumulated_flatten_lengths); step=1)
+        env_ranges = zip(env_ranges_tmp...) |> MapSplat((x, y) -> x+1:y)
+        env_indices = zip(env_names, env_ranges) |> MapSplat((name, range) -> index(getfield(env, name), x0[name], range))
+        return (; zip(env_names, env_indices)...)  # NamedTuple
+    end
+end
 
 
 end  # module
