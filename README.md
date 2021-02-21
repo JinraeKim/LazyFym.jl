@@ -121,3 +121,4 @@ test()
 ```
 ## Todo
 - [ ] Nested environments (like `fym` and `FymEnvs`)
+- [ ] Add an example of parallel simulation
