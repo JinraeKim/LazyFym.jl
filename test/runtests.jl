@@ -73,8 +73,7 @@ function test()
     end
     x1_exacts = res.t |> Map(x1_exact) |> collect
     ϵ = 1e-5
-    @test ([norm(res.x1[i] - x1_exacts[i])
-            for i in 1:length(x1_exacts)] |> maximum) < ϵ
+    @test ([norm(res.x1[i] - x1_exacts[i]) for i in 1:length(x1_exacts)] |> maximum) < ϵ
 end
 
 test()

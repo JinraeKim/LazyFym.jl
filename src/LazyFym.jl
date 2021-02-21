@@ -130,10 +130,7 @@ Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     return datum, (x_next, t_next)
 end
 # simulation
-Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>,
-                                             [ts, Drop(1),
-                                              Step(env, x0, ts[1],
-                                                   ẋ, update)])
+Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
 
 
 end  # module
