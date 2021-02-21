@@ -19,19 +19,19 @@ abstract type FymEnv end
 
 ## numerical integration
 # methods
-function euler(_ẋ, x, t, Δt, args...; kwargs...)
-    return x + Δt * _ẋ(x, t, args...; kwargs...)
+function euler(_ẋ, _x, t, Δt, args...; kwargs...)
+    return _x + Δt * _ẋ(_x, t, args...; kwargs...)
 end
-function rk4(_ẋ, x, t, Δt, args...; kwargs...)
-    k1 = _ẋ(x, t, args...; kwargs...)
-    k2 = _ẋ(x + k1*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
-    k3 = _ẋ(x + k2*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
-    k4 = _ẋ(x + k3*Δt, t + Δt, args...; kwargs...)
-    return x + (Δt/6)*sum([k1, k2, k3, k4] .* [1, 2, 2, 1])
+function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
+    k1 = _ẋ(_x, t, args...; kwargs...)
+    k2 = _ẋ(_x + k1*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
+    k3 = _ẋ(_x + k2*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
+    k4 = _ẋ(_x + k3*Δt, t + Δt, args...; kwargs...)
+    return _x + (Δt/6)*sum([k1, k2, k3, k4] .* [1, 2, 2, 1])
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
-    sys_index_dict, sys_size_dict = preprocess(env, x)  # TODO
+    sys_index_dict, sys_size_dict = preprocess(env, x)
     _x = raw(x, sys_index_dict)
     _ẋ = function(_x, t, args...; kwargs...)
         x = process(_x, sys_index_dict, sys_size_dict)
