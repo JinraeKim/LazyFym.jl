@@ -1,5 +1,7 @@
 # LazyFym
 **LazyFym** is a general purpose simulator for dynamical systems.
+## NOTICE
+This package is **work-in-progress**.
 
 ## Features
 ### Lazy evaluation
@@ -12,6 +14,9 @@ You can reuse your simulator with various initial values and time span.
 Unlike the previous versions of `fym` simulators, [fym](https://github.com/fdcl-nrf/fym) and [FymEnvs](https://github.com/fdcl-nrf/FymEnvs.jl),
 LazyFym barely restricts the forms of your custom systems and environments
 by avoding inheritance (`fym`) and class-like constructors (`FymEnvs`).
+### Parallelism
+(It is expected that parallel simulation is easy with this package.
+Detailed explanation will be given after testing some examples.)
 
 ## Interface
 LazyFym provides two Types: 1) 'FymSys' and 2) 'FymEnv'.
