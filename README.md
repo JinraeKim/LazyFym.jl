@@ -20,10 +20,9 @@ by avoding inheritance (`fym`) and class-like constructors (`FymEnvs`).
 Detailed explanation will be given after testing some examples.)
 
 ## Interface
-LazyFym provides two Types: 1) 'FymSys' and 2) 'FymEnv'.
-`FymSys` (probably) contains the information of dynamical system.
-`FymEnv` (probably) contains the information of the whole environment,
-consisting of `FymSys` systems.
+LazyFym provides a Type `FymEnv`.
+`FymEnv` contains the information of an environment (system),
+probably consisting of other `FymEnv`s as sub-environments (sub-systems).
 ### Quick start
 Examples including simulation with a custom environment
 can be found in directory `test`.
