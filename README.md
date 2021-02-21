@@ -23,4 +23,4 @@ Examples including simulation with a custom environment
 can be found in directory `test`.
 
 ## Todo
--[ ] Nested environments (like `fym` and `FymEnvs`)
+- [ ] Nested environments (like `fym` and `FymEnvs`)
