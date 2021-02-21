@@ -13,9 +13,11 @@ This makes it possible to evaluate your simulator lazily.
 You may possibly save **your custom simulator** and load it to reproduce
 simulation data and perform simulation with different configurations.
 You can reuse your simulator with various initial values and time span.
-### Flexible usage pattern
-LazyFym barely restricts the forms of your custom environments
-and provides general-purpose interface.
+### Flexible usage pattern and nested environments
+LazyFym supports **nested environments**.
+In addition,
+LazyFym does not restrict the forms of your custom environments
+and thus provides a general-purpose interface.
 ### Parallelism
 (It is expected that parallel simulation is easy with this package.
 Detailed explanation will be given after testing some examples.)
