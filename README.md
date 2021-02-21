@@ -36,7 +36,7 @@ using Test
 using Transducers
 
 using LinearAlgebra
-using Plots
+# using Plots
 
 
 # sub-envs
