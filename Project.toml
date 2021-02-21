@@ -1,7 +1,7 @@
 name = "LazyFym"
 uuid = "19ce2a37-d051-4e03-9a1e-989d2d09a817"
 authors = ["JinraeKim <kjl950403@gmail.com> and contributors"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
