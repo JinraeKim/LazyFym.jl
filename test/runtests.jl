@@ -6,10 +6,10 @@ using LinearAlgebra
 
 
 # systems
-struct Sys1 <: FymSys
+struct Sys1 <: FymEnv
     a
 end
-struct Sys2 <: FymSys
+struct Sys2 <: FymEnv
     b
 end
 # environments

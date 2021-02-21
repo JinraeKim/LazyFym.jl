@@ -2,19 +2,16 @@ module LazyFym
 
 using Transducers
 
-export FymSys
 export FymEnv
 
 export ∫
 # export euler, rk4  # exporting them is deprecated
-
 # export update, ẋ  # exporting them is deprecated
 
 export Sim
 
 
 ## Types
-abstract type FymSys end
 abstract type FymEnv end
 
 ## numerical integration
@@ -61,7 +58,7 @@ end
 ## (internal) API
 # get names
 function system_names(env::FymEnv)
-    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: Union{FymSys, FymEnv}]
+    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: FymEnv]
 end
 function preprocess(env::FymEnv, x0)
     sys_names = system_names(env)
@@ -95,7 +92,7 @@ function process(_x, sys_index_dict, sys_size_dict)
     return x
 end
 # initial condition
-function initial_condition(env::Union{FymSys, FymEnv})
+function initial_condition(env::FymEnv)
     names = LazyFym.system_names(env)
     values = names |> Map(name -> initial_condition(getfield(env, name)))
     return zip(names, values) |> Dict

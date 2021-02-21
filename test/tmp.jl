@@ -10,7 +10,7 @@ struct Syss <: FymEnv
     sys2
 end
 
-struct Sys1 <: FymSys
+struct Sys1 <: FymEnv
     a
 end
 
