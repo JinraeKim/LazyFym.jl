@@ -6,15 +6,15 @@ using LinearAlgebra
 
 
 # single environment (dynamical system) case
-struct Env <: Fym
+struct SimpleEnv <: Fym
 end
 # dynamicas
-function ẋ(env::Env, x, t)
+function ẋ(env::SimpleEnv, x, t)
     ẋ = -x
     return ẋ
 end
 # initial condition
-function initial_condition(env::Env)
+function initial_condition(env::SimpleEnv)
     return rand(10)
 end
 # data postprocessing
@@ -30,7 +30,7 @@ end
 
 # test code
 function parallel()
-    env = Env()
+    env = SimpleEnv()
     t0 = 0.0
     Δt = 0.01
     tf = 100.0
