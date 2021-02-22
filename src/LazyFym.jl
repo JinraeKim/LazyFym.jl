@@ -32,8 +32,9 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
-    # TODO: preprocess data everytime may be bad for performance;
-    # for now it is left as unresolved
+    # preprocess data everytime may be bad for performance;
+    # to improve the simulation speed, you should extend LazyFym functions
+    # such as LazyFym.size
     env_index_nt, env_size_nt = preprocess(env, x)
     _x = raw(env, x)
     _ẋ = function(_x, t, args...; kwargs...)
