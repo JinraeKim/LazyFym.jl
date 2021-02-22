@@ -22,137 +22,83 @@ You can take either eager or lazy data postprocessing with LazyFym.
 Since LazyFym automatically calculate the information of environments (including size, flatten_length, etc.),
 you should consider extend `LazyFym` functions for your custom environments such as `LazyFym.size`
 to improve the simulation speed.
-### Parallelism (Todo)
-(It is expected that parallel simulation is easy with this package.
-Detailed explanation will be given after testing some examples.)
+### Parallelism
+It is not seemingly different from the sequential simulation.
+For example,
+you can perform simulation with various initial conditions by
+replacing `collect` by `tcollect` (thread-based) or `dcollect` (process-based), which are provided by `Transducers.jl`.
+For more details, see the below example code or `test/paralle.jl`.
 ### Performance improvement for simulations with long time span (Todo)
 (I'm trying to apply some ideas, e.g., `PartitionedSim`,
 but it seems not fast as I expected.)
 
 ## Interface
-LazyFym provides a Type `FymEnv`.
-`FymEnv` contains the information of an environment (system),
-probably consisting of other `FymEnv`s as sub-environments (sub-systems).
+LazyFym provides a Type `Fym`.
+`Fym` contains the information of an environment (system),
+probably consisting of other `Fym`s as sub-environments (sub-systems).
 ### Quick start
-Examples including simulation with a custom environment
-can be found in directory `test`.
-Here is a basic example:
+you can find more examples in directory `test`,
+including nested custom environments,
+flexible usage patterns with eager or lazy data postprocessing,
+and parallel simulation.
+Here is a basic example with parallel computing (see `test/parallel.jl`):
 ```julia
 using LazyFym
-using Test
 using Transducers
 
+using Test
 using LinearAlgebra
 
 
-# sub-envs
-struct Env1 <: FymEnv
-    a
+# single environment (dynamical system) case
+struct Env <: Fym
 end
-struct Env2 <: FymEnv
-    b
+# dynamicas
+function ẋ(env::Env, x, t)
+    ẋ = -x
+    return ẋ
 end
-struct EnvBig <: FymEnv
-    env1::Env1
-    env2::Env2
+# initial condition
+function initial_condition(env::Env)
+    return rand(10)
 end
-# environments
-struct Env <: FymEnv
-    env1::Env1
-    envbig::EnvBig
-end
-# dynamics
-function ẋ(env::Env, x, t; c=1)
-    x1 = x.env1  # x will be given as NamedTuple
-    xbig1 = x.envbig.env1
-    xbig2 = x.envbig.env2
-    ẋ1 = -(env.env1.a * c) * x1
-    ẋbig1 = -(env.envbig.env1.a * c) * xbig1
-    ẋbig2 = -(env.envbig.env2.b * c) * xbig2
-    return (; env1 = ẋ1, envbig = (; env1 = ẋbig1, env2 = ẋbig2))
-end
-# (eager data postprocessing) update rule within each time step
-# To improve simulator speed, you should consider lazy data postprocessing using `LazyFym.update`.
-function update(env::Env, ẋ, x, t, Δt)
-    _datum = Dict()
-    _datum[:x] = x
-    _datum[:t] = t
-    _datum[:x1] = x.env1
-    _datum[:xbig1] = x.envbig.env1
-    _datum[:xbig2] = x.envbig.env2
-    c = gain(t)
-    x_next = ∫(env, ẋ, x, t, Δt; c=c)  # default method: RK4
-    # Recording data after update is someetimes required
-    # e.g., integrated reward in integral reinforcement learning
-    _datum[:x_next] = x_next
-    _datum[:x1_next] = x_next.env1
-    _datum[:xbig1_next] = x_next.envbig.env1
-    _datum[:xbig2_next] = x_next.envbig.env2
-    datum = (; zip(keys(_datum), values(_datum))...)  # to make it immutable; not necessary
-    return datum, x_next
-end
+# data postprocessing
 function postprocess(datum_raw)
-    _datum = Dict(:t => datum_raw.t, :x1 => datum_raw.x.env1)
+    _datum = Dict(:t => datum_raw.t, :x => datum_raw.x)
     datum = (; zip(keys(_datum), values(_datum))...)
     return datum
 end
-function gain(t)
-    return 1  # for test
-end
-# terminal condition
+# terminal_condition
 function terminal_condition(datum)
-    return norm(datum.x.env1) < 1e-6
+    return norm(datum.x) < 1e-3
 end
-function terminal_condition_readable(datum)
-    return norm(datum.x1) < 1e-6
-end
-# initial condition
-LazyFym.initial_condition(env::Env1) = [1, 2, 3]
-LazyFym.initial_condition(env::Env2) = [3, 2, 1]
 
-
-## lazy postprocessing
-function default_update()
-    println("Simulation with custom update (lazy postprocessing)")
-    env1 = Env1(2.0)
-    envbig1 = Env1(3.0)
-    envbig2 = Env2(1.0)
-    envbig = EnvBig(envbig1, envbig2)
-    env = Env(env1, envbig)
-    # time
+# test code
+function parallel()
+    env = Env()
     t0 = 0.0
-    tf = 100.0
     Δt = 0.01
+    tf = 100.0
     ts = t0:Δt:tf
-    # extend `LazyFym.initial_condition` will automatically construct a NamedTuple; not mandatory
-    x0 = LazyFym.initial_condition(env)
-    # simulator (default)
-    trajs(x0, ts) = Sim(env, x0, ts, ẋ)  # `update` is loaded from `LazyFym`
-    # (example) simulation with terminal condition
-    @time _ = trajs(x0, ts) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
-    @time data_ = trajs(x0, ts) |> Map(postprocess) |> TakeWhile(!terminal_condition_readable) |> evaluate
-    # (example) simulation with given time span
-    @time data = trajs(x0, ts) |> Map(postprocess) |> evaluate
-    # (tool) `PartitionedSim` for very long simulation (to use this, you must add `x_next` to datum in your custom `update` function)
-    # TODO: `PartitionedSim` is quite slow although it is introduced for long simulation
-    @time _data = LazyFym.PartitionedSim(trajs, x0, ts; horizon=1000) |> Map(postprocess) |> TakeWhile(!terminal_condition_readable) |> evaluate
-    _trajs(x0, ts) = trajs(x0, ts) |> TakeWhile(!terminal_condition)
-    @time _ = LazyFym.PartitionedSim(_trajs, x0, ts; horizon=1000) |> Map(postprocess) |> evaluate
-    @test data_ == _data  # test `PartitionedSim`
-    # (test) compare simulation result with the exact solution (linear system)
-    x1_exact = function(t)
-        c = gain(t)
-        return exp(-env.env1.a * c * t) * x0.env1
-    end
-    x1_exacts = data.t |> Map(x1_exact) |> collect
-    ϵ = 1e-6
-    @test ([norm(data.x1[i] - x1_exacts[i]) for i in 1:length(x1_exacts)] |> maximum) < ϵ
-    return data_, data, _data  # for test
+    num = 1:100
+    @time x0s = num |> Map(i -> initial_condition(env)) |> collect  # initial conditions
+    # simulator
+    trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
+    # parallel simulation
+    n = rand(num)
+    @time data_single = trajs_evaluate(x0s[n], ts)  # single scenario
+    @time data_multiple = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> collect  # multiple scenarios (sequential)
+    @time data_parallel_t = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # multiple scenarios with thread-based parallel computing
+    @time data_parallel_d = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> dcollect  # multiple scenarios with process-based parallel computing
+    @test data_single == data_multiple[n]
+    @test data_multiple == data_parallel_t == data_parallel_d
+    return data_single, data_multiple, data_parallel_t, data_parallel_d
 end
 
-default_update()
+data_single, data_multiple, data_parallel_t, data_parallel_d = parallel()
+nothing
 ```
 ## Todo
 - [x] Nested environments (like `fym` and `FymEnvs`)
 - [x] Performance improvement (supporting nested env. makes it slow -> can be improved by telling LazyFym the information of your custom environments)
-- [ ] Add an example of parallel simulation
+- [x] Add an example of parallel simulation

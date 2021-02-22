@@ -6,18 +6,18 @@ using LinearAlgebra
 
 
 # sub-envs
-struct Env1 <: FymEnv
+struct Env1 <: Fym
     a
 end
-struct Env2 <: FymEnv
+struct Env2 <: Fym
     b
 end
-struct EnvBig <: FymEnv
+struct EnvBig <: Fym
     env1::Env1
     env2::Env2
 end
 # environments
-struct Env <: FymEnv
+struct Env <: Fym
     env1::Env1
     envbig::EnvBig
 end
@@ -71,6 +71,7 @@ LazyFym.initial_condition(env::Env1) = [1, 2, 3]
 LazyFym.initial_condition(env::Env2) = [3, 2, 1]
 # `LazyFym` will automatically calculate the state of each environment (system).
 # To enhance the simulation performance, you should consider "telling the information to LazyFym" as follows.
+# One may use this pattern within a custom module.
 _env1 = Env1(1.0)  # aux
 _envbig1 = Env1(1.0)  # aux
 _envbig2 = Env2(1.0)  # aux

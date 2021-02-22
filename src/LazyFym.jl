@@ -3,8 +3,7 @@ module LazyFym
 using Transducers
 
 # Types
-export FymEnv
-export FymSim
+export Fym
 # convenient APIs
 export ∫
 export Sim
@@ -16,7 +15,7 @@ export evaluate, sequentialise
 
 ## Types
 # environments
-abstract type FymEnv end
+abstract type Fym end
 
 ## Numerical integration
 # euler method
@@ -33,8 +32,9 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
 end
 # API
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
-    # TODO: preprocess data everytime may be bad for performance;
-    # for now it is left as unresolved
+    # preprocess data everytime may be bad for performance;
+    # to improve the simulation speed, you should extend LazyFym functions
+    # such as LazyFym.size
     env_index_nt, env_size_nt = preprocess(env, x)
     _x = raw(env, x)
     _ẋ = function(_x, t, args...; kwargs...)
@@ -54,9 +54,9 @@ Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     return datum, (x_next, t_next)
 end
 # simulation (better for short simulation time)
-Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
-Sim(env::FymEnv, x0, ts, ẋ) = Sim(env::FymEnv, x0, ts, ẋ, update)  # default data structure
-Sim(env::FymEnv, x0, ts) = Sim(env::FymEnv, x0, ts, ẋ, update)  # for test
+Sim(env::Fym, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
+Sim(env::Fym, x0, ts, ẋ) = Sim(env::Fym, x0, ts, ẋ, update)  # default data structure
+Sim(env::Fym, x0, ts) = Sim(env::Fym, x0, ts, ẋ, update)  # for test
 # partitioned simulation (better for long simulation time)
 function PartitionedSim(trajs, x0, ts; horizon=1000)
     ts_length = ts |> collect |> length
@@ -86,7 +86,7 @@ end
 
 ## Convenient tools
 # all-zero dynamics (for test)
-function ẋ(env::FymEnv, x, t)
+function ẋ(env::Fym, x, t)
     env_names = names(env)
     if env_names == []
         return zero(x)
@@ -96,7 +96,7 @@ function ẋ(env::FymEnv, x, t)
     end
 end
 # default update (for test)
-function update(env::FymEnv, ẋ, x, t, Δt)  # provided
+function update(env::Fym, ẋ, x, t, Δt)  # provided
     _datum = Dict(:x => x, :t => t)
     x_next = ∫(env, ẋ, x, t, Δt)
     _datum[:x_next] = x_next
@@ -104,7 +104,7 @@ function update(env::FymEnv, ẋ, x, t, Δt)  # provided
     return datum, x_next
 end
 # automatic completion of initial condition
-function initial_condition(env::FymEnv)
+function initial_condition(env::Fym)
     env_names = LazyFym.names(env)
     values = env_names |> Map(name -> initial_condition(getfield(env, name)))
     return (; zip(env_names, values)...)  # NamedTuple
@@ -124,10 +124,10 @@ end
 
 ## Internal API
 # get names
-function Base.names(env::FymEnv)
-    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: FymEnv]
+function Base.names(env::Fym)
+    return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: Fym]
 end
-function preprocess(env::FymEnv, x0)
+function preprocess(env::Fym, x0)
     env_size_nt = size(env, x0)
     env_flatten_length = flatten_length(env, x0)
     env_index_nt = index(env, x0, 1:env_flatten_length)
@@ -154,7 +154,7 @@ function process(_x, env_index_nt, env_size_nt)
     end
 end
 # size
-function Base.size(env::FymEnv, x0)
+function Base.size(env::Fym, x0)
     env_names = names(env)
     if env_names == []
         return size(x0)
@@ -164,7 +164,7 @@ function Base.size(env::FymEnv, x0)
     end
 end
 # flatten length
-function flatten_length(env::FymEnv, x0)
+function flatten_length(env::Fym, x0)
     env_names = names(env)
     if env_names == []
         return prod(size(x0))
@@ -173,7 +173,7 @@ function flatten_length(env::FymEnv, x0)
     end
 end
 # index
-function index(env::FymEnv, x0, _range)
+function index(env::Fym, x0, _range)
     env_names = names(env)
     if env_names == []
         return _range
