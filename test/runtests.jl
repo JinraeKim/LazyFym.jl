@@ -6,18 +6,18 @@ using LinearAlgebra
 
 
 # sub-envs
-struct Env1 <: FymEnv
+struct Env1 <: Fym
     a
 end
-struct Env2 <: FymEnv
+struct Env2 <: Fym
     b
 end
-struct EnvBig <: FymEnv
+struct EnvBig <: Fym
     env1::Env1
     env2::Env2
 end
 # environments
-struct Env <: FymEnv
+struct Env <: Fym
     env1::Env1
     envbig::EnvBig
 end

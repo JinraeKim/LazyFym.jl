@@ -30,9 +30,9 @@ Detailed explanation will be given after testing some examples.)
 but it seems not fast as I expected.)
 
 ## Interface
-LazyFym provides a Type `FymEnv`.
-`FymEnv` contains the information of an environment (system),
-probably consisting of other `FymEnv`s as sub-environments (sub-systems).
+LazyFym provides a Type `Fym`.
+`Fym` contains the information of an environment (system),
+probably consisting of other `Fym`s as sub-environments (sub-systems).
 ### Quick start
 Examples including simulation with a custom environment
 can be found in directory `test`.
@@ -46,18 +46,18 @@ using LinearAlgebra
 
 
 # sub-envs
-struct Env1 <: FymEnv
+struct Env1 <: Fym
     a
 end
-struct Env2 <: FymEnv
+struct Env2 <: Fym
     b
 end
-struct EnvBig <: FymEnv
+struct EnvBig <: Fym
     env1::Env1
     env2::Env2
 end
 # environments
-struct Env <: FymEnv
+struct Env <: Fym
     env1::Env1
     envbig::EnvBig
 end
