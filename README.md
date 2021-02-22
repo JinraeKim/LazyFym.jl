@@ -37,7 +37,7 @@ probably consisting of other `FymEnv`s as sub-environments (sub-systems).
 Examples including simulation with a custom environment
 can be found in directory `test`.
 Here is a basic example:
-```
+```julia
 using LazyFym
 using Test
 using Transducers
