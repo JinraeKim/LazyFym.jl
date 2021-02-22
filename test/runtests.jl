@@ -32,9 +32,11 @@ function ẋ(env::Env, x, t; c=1)
     ẋbig2 = -(env.envbig.env2.b * c) * xbig2
     return (; env1 = ẋ1, envbig = (; env1 = ẋbig1, env2 = ẋbig2))
 end
-# update rule within each time step
+# (eager data postprocessing) update rule within each time step
+# To improve simulator speed, you should consider lazy data postprocessing using `LazyFym.update`.
 function update(env::Env, ẋ, x, t, Δt)
     _datum = Dict()
+    _datum[:x] = x
     _datum[:t] = t
     _datum[:x1] = x.env1
     _datum[:xbig1] = x.envbig.env1
@@ -43,22 +45,29 @@ function update(env::Env, ẋ, x, t, Δt)
     x_next = ∫(env, ẋ, x, t, Δt; c=c)  # default method: RK4
     # Recording data after update is someetimes required
     # e.g., integrated reward in integral reinforcement learning
+    _datum[:x_next] = x_next
     _datum[:x1_next] = x_next.env1
     _datum[:xbig1_next] = x_next.envbig.env1
     _datum[:xbig2_next] = x_next.envbig.env2
     datum = (; zip(keys(_datum), values(_datum))...)  # to make it immutable; not necessary
     return datum, x_next
 end
+function postprocess(datum_raw)
+    _datum = Dict(:t => datum_raw.t, :x1 => datum_raw.x.env1)
+    datum = (; zip(keys(_datum), values(_datum))...)
+    return datum
+end
 function gain(t)
     return 1  # for test
 end
 # terminal condition
 function is_terminated(datum)
-    return norm(datum.x1) < 1e-6
+    return norm(datum.x.env1) < 1e-6
 end
 # initial condition
 LazyFym.initial_condition(env::Env1) = [1, 2, 3]
 LazyFym.initial_condition(env::Env2) = [3, 2, 1]
+LazyFym.size(env::Env1) = println("hello")
 
 
 function custom_env()
@@ -69,28 +78,28 @@ function custom_env()
     env = Env(env1, envbig)
     # time
     t0 = 0.0
-    tf = 100.0
+    tf = 200.0
     Δt = 0.01
     ts = t0:Δt:tf
-    ts_reverse = t0:-Δt:-tf
     # extend `LazyFym.initial_condition` will automatically construct a NamedTuple; not mandatory
     x0 = LazyFym.initial_condition(env)
     # simulator
     trajs(x0, ts) = Sim(env, x0, ts, ẋ, update)
-    # trajs(x0, ts) = Sim(env, x0, ts, LazyFym.ẋ, LazyFym.update)  # for test
-    @time trajs(x0, ts) |> evaluate  # reuse test
-    @time data = trajs(x0, ts) |> TakeWhile(!is_terminated) |> evaluate
-    # exact solution
+    # (example) simulation with terminal condition
+    @time trajs(x0, ts) |> TakeWhile(!is_terminated) |> evaluate
+    # (example) simulation with given time span
+    @time data = trajs(x0, ts) |> evaluate
+    # (tool) `PartitionedSim` for very long simulation (to use this, you must add `x_next` to datum in your custom `update` function)
+    @time _data = LazyFym.PartitionedSim(trajs, x0, ts)  # faster when `length(ts) > 20000`
+    @test data == _data  # test `PartitionedSim`
+    # (test) compare simulation result with the exact solution (linear system)
     x1_exact = function(t)
         c = gain(t)
         return exp(-env.env1.a * c * t) * x0.env1
     end
     x1_exacts = data.t |> Map(x1_exact) |> collect
-    ϵ = 1e-5
+    ϵ = 1e-6
     @test ([norm(data.x1[i] - x1_exacts[i]) for i in 1:length(x1_exacts)] |> maximum) < ϵ
-    # plot(data.t, sequentialise(data.x1))
-    # return data  # for debug
 end
 
 custom_env()
-# data = custom_env()  # for debug
