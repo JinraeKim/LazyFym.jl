@@ -4,6 +4,7 @@ using Transducers
 
 # Types
 export FymEnv
+export FymSim
 # convenient APIs
 export ∫
 export Sim
@@ -14,6 +15,7 @@ export evaluate, sequentialise
 
 
 ## Types
+# environments
 abstract type FymEnv end
 
 ## Numerical integration
@@ -51,8 +53,36 @@ Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
     datum, x_next = update(env, ẋ, x, t, Δt)
     return datum, (x_next, t_next)
 end
-# simulation
+# simulation (better for short simulation time)
 Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
+Sim(env::FymEnv, x0, ts, ẋ) = Sim(env::FymEnv, x0, ts, ẋ, update)  # default data structure
+Sim(env::FymEnv, x0, ts) = Sim(env::FymEnv, x0, ts, ẋ, update)  # for test
+# partitioned simulation (better for long simulation time)
+function PartitionedSim(trajs, x0, ts; horizon=1000)
+    ts_length = ts |> collect |> length
+    if ts_length < horizon
+        error("Partition horizon should be less than the number of time instants")
+    end
+    # ex) trajs(x0, ts) = Sim(env, x0, ts, ẋ, update) |> TakeWhile(!is_terminated)
+    split_sim(x0, ts0) = ScanEmit((x0, ts0)) do (x, ts), ts_next
+        # data = trajs(x, ts) |> collect
+        # x_next = data[end].x_next
+        data = trajs(x, ts) |> collect
+        if length(data) == 0
+            data = missing
+            x_next = x
+        else
+            x_next = data[end].x_next
+        end
+        return data, (x_next, ts_next)
+    end
+    ts_partitioned = ts |> Partition(horizon, step=horizon-1, flush=true) |> Map(copy)
+    ts_partitioned_appended = [ts_partitioned..., missing]
+    # _data = ts_partitioned_appended |> Drop(1) |> split_sim(x0, ts[1:horizon]) |> collect
+    _data = ts_partitioned_appended |> Drop(1) |> split_sim(x0, ts[1:horizon]) |> Filter(!ismissing) |> collect
+    data = vcat(_data...)
+    return data
+end
 
 ## Convenient tools
 # all-zero dynamics (for test)
@@ -67,8 +97,10 @@ function ẋ(env::FymEnv, x, t)
 end
 # default update (for test)
 function update(env::FymEnv, ẋ, x, t, Δt)  # provided
-    datum = Dict(:state => x, :t => t)
+    _datum = Dict(:x => x, :t => t)
     x_next = ∫(env, ẋ, x, t, Δt)
+    _datum[:x_next] = x_next
+    datum = (; zip(keys(_datum), values(_datum))...)
     return datum, x_next
 end
 # automatic completion of initial condition
@@ -77,7 +109,7 @@ function initial_condition(env::FymEnv)
     values = env_names |> Map(name -> initial_condition(getfield(env, name)))
     return (; zip(env_names, values)...)  # NamedTuple
 end
-# trajs -> NamedTuple
+# trajs -> NamedTuple (may take a lot of time for long time span)
 function evaluate(trajs)
     _trajs = trajs |> collect
     all_keys = union([keys(traj) for traj in _trajs]...)
