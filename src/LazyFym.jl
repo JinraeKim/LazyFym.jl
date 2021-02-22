@@ -58,29 +58,30 @@ Sim(env::FymEnv, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, t
 Sim(env::FymEnv, x0, ts, ẋ) = Sim(env::FymEnv, x0, ts, ẋ, update)  # default data structure
 Sim(env::FymEnv, x0, ts) = Sim(env::FymEnv, x0, ts, ẋ, update)  # for test
 # partitioned simulation (better for long simulation time)
-function PartitionedSim(trajs, x0, ts, horizon=1000)
+function PartitionedSim(trajs, x0, ts; horizon=1000)
     ts_length = ts |> collect |> length
     if ts_length < horizon
         error("Partition horizon should be less than the number of time instants")
     end
     # ex) trajs(x0, ts) = Sim(env, x0, ts, ẋ, update) |> TakeWhile(!is_terminated)
     split_sim(x0, ts0) = ScanEmit((x0, ts0)) do (x, ts), ts_next
-        data = trajs(x, ts) |> evaluate
-        x_next = data.x_next[end]
+        # data = trajs(x, ts) |> collect
+        # x_next = data[end].x_next
+        data = trajs(x, ts) |> collect
+        if length(data) == 0
+            data = missing
+            x_next = x
+        else
+            x_next = data[end].x_next
+        end
         return data, (x_next, ts_next)
     end
     ts_partitioned = ts |> Partition(horizon, step=horizon-1, flush=true) |> Map(copy)
     ts_partitioned_appended = [ts_partitioned..., missing]
-    _data = ts_partitioned_appended |> Drop(1) |> split_sim(x0, ts[1:horizon]) |> collect
-    data = merge_trajs(_data)
+    # _data = ts_partitioned_appended |> Drop(1) |> split_sim(x0, ts[1:horizon]) |> collect
+    _data = ts_partitioned_appended |> Drop(1) |> split_sim(x0, ts[1:horizon]) |> Filter(!ismissing) |> collect
+    data = vcat(_data...)
     return data
-end
-function merge_trajs(trajs_partitioned)
-    _trajs_partitioned = trajs_partitioned |> collect
-    all_keys = union([keys(traj) for traj in _trajs_partitioned]...)
-    get_values(key) = vcat([get(traj, key, missing) for traj in _trajs_partitioned]...)
-    all_values = all_keys |> Map(get_values)
-    return (; zip(all_keys, all_values)...)
 end
 
 ## Convenient tools
