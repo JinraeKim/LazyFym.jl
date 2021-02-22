@@ -70,7 +70,20 @@ end
 # initial condition
 LazyFym.initial_condition(env::Env1) = [1, 2, 3]
 LazyFym.initial_condition(env::Env2) = [3, 2, 1]
-LazyFym.size(env::Env1) = println("hello")
+# `LazyFym` will automatically calculate the state of each environment (system).
+# To enhance the simulation performance, you should consider "telling the information to LazyFym" as follows.
+_env1 = Env1(1.0)  # aux
+_envbig1 = Env1(1.0)  # aux
+_envbig2 = Env2(1.0)  # aux
+_envbig = EnvBig(_envbig1, _envbig2)  # aux
+_env = Env(_env1, _envbig)  # aux
+_x0 = LazyFym.initial_condition(_env)  # aux
+_size = LazyFym.size(_env, _x0)
+_flatten_length = LazyFym.flatten_length(_env, _x0)
+_index = LazyFym.index(_env, _x0, 1:_flatten_length)
+LazyFym.size(_env::Env, x) = _size
+LazyFym.flatten_length(_env::Env, x) = _flatten_length
+LazyFym.index(_env::Env, x, _range) = _index
 
 
 ## lazy postprocessing
