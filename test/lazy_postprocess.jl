@@ -88,7 +88,7 @@ LazyFym.index(_env::Env, x, _range) = _index
 
 ## lazy postprocessing
 function default_update()
-    println("Simulation with custom update (lazy postprocessing)")
+    println("Simulation with default update (lazy postprocessing)")
     env1 = Env1(2.0)
     envbig1 = Env1(3.0)
     envbig2 = Env2(1.0)

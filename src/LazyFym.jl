@@ -1,18 +1,25 @@
 module LazyFym
 
-using Reexport
+using Transducers
+
+import Base: size
 
 
-export Fym
-abstract type Fym end
+include("types.jl")
+include("internalAPI.jl")
+include("integration.jl")
+include("simulation.jl")
+include("tools.jl")
+include("postprocess.jl")
 
+include("fymenvs.jl")
 
-include("LazyFymBase.jl")
-@reexport using .LazyFymBase
-using .LazyFymBase: initial_condition, PartitionedSim  # for convenience
-using .LazyFymBase: size, flatten_length, index  # to improve the simulation speed
+export Fym,
+       ∫,
+       Sim,
+       evaluate, catevaluate, sequentialise
 
-include("Envs.jl")
-@reexport using .Envs
+export InputAffineQuadraticCostEnv
+
 
 end  # module
