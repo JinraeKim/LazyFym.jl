@@ -1,5 +1,44 @@
 ## Internal API
 # get names
+"""
+    names(env::Fym)
+
+Get the symbols of sub-environments.
+
+# Examples
+julia> using LazyFym
+julia> struct Env1 <: Fym
+       end
+
+julia> struct Env2 <: Fym
+       end
+
+julia> struct Env3 <: Fym
+       end
+
+julia> struct Env12 <: Fym
+           env1::Env1
+           env2::Env2
+       end
+
+julia> struct Env12_3 <: Fym
+           env12::Env12
+           env3::Env3
+       end
+
+julia> env12_3 = Env12_3(Env12(Env1(), Env2()), Env3())
+Env12_3(Env12(Env1(), Env2()), Env3())
+
+julia> LazyFym.names(env12_3)
+2-element Array{Symbol,1}:
+ :env12
+ :env3
+
+julia> LazyFym.names(env12_3.env12)
+2-element Array{Symbol,1}:
+ :env1
+ :env2
+"""
 function Base.names(env::Fym)
     return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: Fym]
 end
