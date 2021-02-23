@@ -47,7 +47,7 @@ function parallel()
     @time data_parallel_d = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> dcollect  # multiple scenarios with process-based parallel computing
     @test data_single == data_multiple[n]
     @test data_multiple == data_parallel_t == data_parallel_d
-    data_merged = data_multiple |> catevaluate
+    data_merged = data_multiple |> catevaluate  # merge trajs data into one NamedTuple
     return data_single, data_multiple, data_parallel_t, data_parallel_d, data_merged
 end
 

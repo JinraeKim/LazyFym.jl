@@ -53,15 +53,15 @@ using LinearAlgebra
 
 
 # single environment (dynamical system) case
-struct Env <: Fym
+struct SimpleEnv <: Fym
 end
-# dynamicas
-function ẋ(env::Env, x, t)
+# dynamics
+function ẋ(env::SimpleEnv, x, t)
     ẋ = -x
     return ẋ
 end
 # initial condition
-function initial_condition(env::Env)
+function initial_condition(env::SimpleEnv)
     return rand(10)
 end
 # data postprocessing
@@ -77,7 +77,7 @@ end
 
 # test code
 function parallel()
-    env = Env()
+    env = SimpleEnv()
     t0 = 0.0
     Δt = 0.01
     tf = 100.0
@@ -94,10 +94,11 @@ function parallel()
     @time data_parallel_d = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> dcollect  # multiple scenarios with process-based parallel computing
     @test data_single == data_multiple[n]
     @test data_multiple == data_parallel_t == data_parallel_d
-    return data_single, data_multiple, data_parallel_t, data_parallel_d
+    data_merged = data_multiple |> catevaluate  # merge trajs data into one NamedTuple
+    return data_single, data_multiple, data_parallel_t, data_parallel_d, data_merged
 end
 
-data_single, data_multiple, data_parallel_t, data_parallel_d = parallel()
+data_single, data_multiple, data_parallel_t, data_parallel_d, data_merged = parallel()
 nothing
 ```
 ## Todo
