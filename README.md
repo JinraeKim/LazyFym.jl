@@ -43,13 +43,16 @@ you can find more examples in directory `test`,
 including nested custom environments,
 flexible usage patterns with eager or lazy data postprocessing,
 and parallel simulation.
-Here is a basic example with parallel computing (see `test/parallel.jl`):
+Here is a basic example with parallel computing and data manipulation to generate a data table (`DataFrames`) and save and load data (`JLD2`) and plot figures (`Plots`) (see `test/parallel.jl`):
 ```julia
 using LazyFym
 using Transducers
 
+using DataFrames
+using JLD2, FileIO
 using Test
 using LinearAlgebra
+using Plots
 
 
 # single environment (dynamical system) case
@@ -62,7 +65,7 @@ function ẋ(env::SimpleEnv, x, t)
 end
 # initial condition
 function initial_condition(env::SimpleEnv)
-    return rand(10)
+    return 2*(rand(10) .- 0.5)
 end
 # data postprocessing
 function postprocess(datum_raw)
@@ -80,25 +83,34 @@ function parallel()
     env = SimpleEnv()
     t0 = 0.0
     Δt = 0.01
-    tf = 100.0
+    tf = 10.0
     ts = t0:Δt:tf
-    num = 1:100
+    num = 1:10
     @time x0s = num |> Map(i -> initial_condition(env)) |> collect  # initial conditions
     # simulator
     trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
-    # parallel simulation
+    # single scenario
     n = rand(num)
-    @time data_single = trajs_evaluate(x0s[n], ts)  # single scenario
-    @time data_multiple = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> collect  # multiple scenarios (sequential)
-    @time data_parallel_t = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # multiple scenarios with thread-based parallel computing
-    @time data_parallel_d = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> dcollect  # multiple scenarios with process-based parallel computing
-    @test data_single == data_multiple[n]
-    @test data_multiple == data_parallel_t == data_parallel_d
-    data_merged = data_multiple |> catevaluate  # merge trajs data into one NamedTuple
-    return data_single, data_multiple, data_parallel_t, data_parallel_d, data_merged
+    data_single = Dict()
+    @time data_single["raw"] = trajs_evaluate(x0s[n], ts)  # single scenario
+    data_single["dict"] = zip(keys(data_single["raw"]), values(data_single["raw"])) |> Dict
+    data_single["df"] = DataFrame(data_single["dict"])
+    # multiple scenarios (parallel simulation with various initial conditions)
+    data_parallel = Dict()
+    data_parallel["raw"] = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # tcollect for thread-based parallel computing
+    data_parallel["df"] = DataFrame(Dict("x0s" => x0s, "trajs" => data_parallel["raw"]))
+    data_parallel["cat"] = data_parallel["df"].trajs |> catevaluate
+    # save and load compatiblity with JLD2 and FileIO
+    save("example.jld2", Dict("df" => data_parallel["df"]))
+    data_parallel["df_loaded"] = load("example.jld2")["df"]
+    @test data_parallel["df"] == data_parallel["df_loaded"]
+    # plot figures; to see, uncomment the following lines
+    # plot(data_single["df"].t, sequentialise(data_single["df"].x); seriestype=:scatter)
+    # plot(data_parallel["cat"].t, data_parallel["cat"].x |> sequentialise; seriestype=:scatter)
+    return Dict("data_single" => data_single, "data_parallel" => data_parallel)
 end
 
-data_single, data_multiple, data_parallel_t, data_parallel_d, data_merged = parallel()
+result = parallel()
 nothing
 ```
 ## Todo
