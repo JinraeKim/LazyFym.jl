@@ -1,9 +1,19 @@
 ## Numerical integration
-# euler method
+"""
+    euler(_ẋ, _x, t, Δt, args...; kwargs...)
+
+Calculate the next state using Euler method.
+`args` and `kwargs` are regarded as constant within the time step.
+"""
 function euler(_ẋ, _x, t, Δt, args...; kwargs...)
     return _x + Δt * _ẋ(_x, t, args...; kwargs...)
 end
-# rk4 method
+"""
+    rk4(_ẋ, _x, t, Δt, args...; kwargs...)
+
+Calculate the next state using Runge-Kutta 4th method.
+`args` and `kwargs` are regarded as constant within the time step.
+"""
 function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
     k1 = _ẋ(_x, t, args...; kwargs...)
     k2 = _ẋ(_x + k1*(0.5*Δt), t + 0.5*Δt, args...; kwargs...)
@@ -11,7 +21,11 @@ function rk4(_ẋ, _x, t, Δt, args...; kwargs...)
     k4 = _ẋ(_x + k3*Δt, t + Δt, args...; kwargs...)
     return _x + (Δt/6)*sum([k1, k2, k3, k4] .* [1, 2, 2, 1])
 end
-# API
+"""
+    ∫(env, ẋ, x, t, Δt, args...; integrator=method, kwargs...)
+
+Perform numerical integration using `method`.
+"""
 function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
     # preprocess data everytime may be bad for performance;
     # to improve the simulation speed, you should extend LazyFym functions
