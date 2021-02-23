@@ -5,6 +5,7 @@
 
 Get the symbols of sub-environments.
 
+```jldoctest
 # Examples
 julia> using LazyFym
 julia> struct Env1 <: Fym
@@ -38,6 +39,7 @@ julia> LazyFym.names(env12_3.env12)
 2-element Array{Symbol,1}:
  :env1
  :env2
+```
 """
 function Base.names(env::Fym)
     return [name for name in fieldnames(typeof(env)) if typeof(getfield(env, name)) <: Fym]
