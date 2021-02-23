@@ -104,3 +104,4 @@ nothing
 - [x] Nested environments (like `fym` and `FymEnvs`)
 - [x] Performance improvement (supporting nested env. makes it slow -> can be improved by telling LazyFym the information of your custom environments)
 - [x] Add an example of parallel simulation
+- [ ] Performance improvement for simulations with long time span
