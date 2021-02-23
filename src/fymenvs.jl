@@ -1,14 +1,8 @@
-"""
-This module provides pre-defined environments describing known dynamical systems.
-"""
-module Envs
-
 using LinearAlgebra
 using Parameters
-using LazyFym: Fym
-import LazyFym: size, flatten_length, index  # to improve the simulation speed
 
 
+########## InputAffineQuadraticCostEnv ##########
 """
 An example of continuous-time nonlinear dynamical system introduced in
 several studies on approximate dynamic programming.
@@ -57,5 +51,4 @@ _index = 1:2
 size(env::InputAffineQuadraticCostEnv, x) = _size
 flatten_length(env::InputAffineQuadraticCostEnv, x) = _flatten_length
 index(env::InputAffineQuadraticCostEnv, x) = _index
-
-end  # module
+########## end ##########

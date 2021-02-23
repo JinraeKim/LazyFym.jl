@@ -4,15 +4,15 @@ using Transducers
 using Plots
 
 
-function ẋ(env::Envs.InputAffineQuadraticCostEnv, x, t)
+function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
     u = command(env, x)
-    ẋ = Envs.ẋ(env, x, t, u)
+    ẋ = LazyFym.ẋ(env, x, t, u)
     return ẋ
 end
-_env = Envs.InputAffineQuadraticCostEnv()
-command(env, x) = Envs.u_optimal(_env, x)
+_env = LazyFym.InputAffineQuadraticCostEnv()
+command(env, x) = LazyFym.u_optimal(_env, x)
 
-function initial_condition(env::Envs.InputAffineQuadraticCostEnv)
+function initial_condition(env::LazyFym.InputAffineQuadraticCostEnv)
     return rand(2)
 end
 
@@ -22,7 +22,7 @@ function postprocess(_datum)
 end
 
 function test()
-    env = Envs.InputAffineQuadraticCostEnv()
+    env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
     Δt = 0.01
     tf = 100.0
