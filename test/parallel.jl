@@ -8,7 +8,7 @@ using LinearAlgebra
 # single environment (dynamical system) case
 struct SimpleEnv <: Fym
 end
-# dynamicas
+# dynamics
 function ẋ(env::SimpleEnv, x, t)
     ẋ = -x
     return ẋ
