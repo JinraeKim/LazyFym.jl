@@ -109,10 +109,10 @@ function default_update()
     # (example) simulation with given time span
     @time data = trajs(x0, ts) |> Map(postprocess) |> evaluate
     # (tool) `PartitionedSim` for very long simulation (to use this, you must add `x_next` to datum in your custom `update` function)
-    # TODO: `PartitionedSim` is quite slow although it is introduced for long simulation
-    @time _data = LazyFym.PartitionedSim(trajs, x0, ts; horizon=1000) |> Map(postprocess) |> TakeWhile(!terminal_condition_readable) |> evaluate
+    # TODO: `PartitionedSim` is too slow (especially with TakeWhile outside)
+    @time _ = LazyFym.PartitionedSim(trajs, x0, ts; horizon=1000) |> Map(postprocess) |> TakeWhile(!terminal_condition_readable) |> evaluate  # too slow
     _trajs(x0, ts) = trajs(x0, ts) |> TakeWhile(!terminal_condition)
-    @time _ = LazyFym.PartitionedSim(_trajs, x0, ts; horizon=1000) |> Map(postprocess) |> evaluate
+    @time _data = LazyFym.PartitionedSim(_trajs, x0, ts; horizon=1000) |> Map(postprocess) |> evaluate
     @test data_ == _data  # test `PartitionedSim`
     # (test) compare simulation result with the exact solution (linear system)
     x1_exact = function(t)
@@ -147,6 +147,7 @@ function custom_update()
     # (example) simulation with given time span
     @time data = trajs(x0, ts) |> evaluate
     # (tool) `PartitionedSim` for very long simulation (to use this, you must add `x_next` to datum in your custom `update` function)
+    # TODO: `PartitionedSim` is too slow (especially with TakeWhile outside)
     @time _ = LazyFym.PartitionedSim(trajs, x0, ts; horizon=1000) |> TakeWhile(!terminal_condition_readable) |> evaluate
     _trajs(x0, ts) = trajs(x0, ts) |> TakeWhile(!terminal_condition_readable)
     @time _data = LazyFym.PartitionedSim(_trajs, x0, ts; horizon=1000) |> evaluate

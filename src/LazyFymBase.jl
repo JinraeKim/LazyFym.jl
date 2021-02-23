@@ -8,7 +8,6 @@ using LazyFym: Fym
 export ∫
 export Sim
 export evaluate, sequentialise
-export PartitionedSim
 # for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated

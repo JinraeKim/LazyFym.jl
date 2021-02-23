@@ -6,6 +6,7 @@ module Envs
 using LinearAlgebra
 using Parameters
 using LazyFym: Fym
+import LazyFym: size, flatten_length, index  # to improve the simulation speed
 
 
 """
@@ -50,5 +51,11 @@ function ẋ(env::InputAffineQuadraticCostEnv, x, t, u)
     return ẋ
 end
 
+_size = (2,)
+_flatten_length = 2
+_index = 1:2
+size(env::InputAffineQuadraticCostEnv, x) = _size
+flatten_length(env::InputAffineQuadraticCostEnv, x) = _flatten_length
+index(env::InputAffineQuadraticCostEnv, x) = _index
 
 end  # module

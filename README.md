@@ -2,7 +2,6 @@
 **LazyFym** is a general-purpose simulator for dynamical systems.
 I'm too *lazy* to run a simulation but *eager* to make a better simulator.
 ## Notes
-This package is **work-in-progress**.
 The origin of the name `Fym` is from the previous versions of flight (but also general-purpose) simulators:
 [fym](https://github.com/fdcl-nrf/fym) in `Python` and [FymEnvs.jl](https://github.com/fdcl-nrf/FymEnvs.jl) in `Julia`.
 
@@ -28,9 +27,12 @@ For example,
 you can perform simulation with various initial conditions by
 replacing `collect` by `tcollect` (thread-based) or `dcollect` (process-based), which are provided by `Transducers.jl`.
 For more details, see the below example code or `test/paralle.jl`.
-### Performance improvement for simulations with long time span (Todo)
+### Predefined Environments
+LazyFym provides some predefined environments for reproducible codes.
+Take a look at `src/Envs.jl`.
+### Performance improvement for simulations with long time span (Todo; experimental)
 (I'm trying to apply some ideas, e.g., `PartitionedSim`,
-but it seems not fast as I expected.)
+but it seems slower than as I expected.)
 
 ## Interface
 LazyFym provides a Type `Fym`.

@@ -9,7 +9,9 @@ abstract type Fym end
 
 include("LazyFymBase.jl")
 @reexport using .LazyFymBase
-using .LazyFymBase: initial_condition, flatten_length, index
+using .LazyFymBase: initial_condition, PartitionedSim  # for convenience
+using .LazyFymBase: size, flatten_length, index  # to improve the simulation speed
+
 include("Envs.jl")
 @reexport using .Envs
 
