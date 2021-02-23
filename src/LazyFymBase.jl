@@ -7,7 +7,7 @@ using LazyFym: Fym
 # convenient APIs
 export ∫
 export Sim
-export evaluate, sequentialise
+export evaluate, catevaluate, sequentialise
 # for test
 # export euler, rk4  # exporting them is deprecated
 # export update, ẋ  # exporting them is deprecated
@@ -109,11 +109,20 @@ function initial_condition(env::Fym)
     values = env_names |> Map(name -> initial_condition(getfield(env, name)))
     return (; zip(env_names, values)...)  # NamedTuple
 end
-# trajs -> NamedTuple (may take a lot of time for long time span)
+# trajs -> NamedTuple
 function evaluate(trajs)
     _trajs = trajs |> collect
     all_keys = union([keys(traj) for traj in _trajs]...)
     get_values(key) = [get(traj, key, missing) for traj in _trajs]
+    # get_values(key) = vcat([get(traj, key, missing) for traj in _trajs]...)
+    all_values = all_keys |> Map(get_values)
+    return (; zip(all_keys, all_values)...)  # NamedTuple
+end
+# multiple trajs -> NamedTuple (NOTICE: applying `catevaluate` to trajs will give you concatenated NamedTuple)
+function catevaluate(trajs)
+    _trajs = trajs |> collect
+    all_keys = union([keys(traj) for traj in _trajs]...)
+    get_values(key) = vcat([get(traj, key, missing) for traj in _trajs]...)
     all_values = all_keys |> Map(get_values)
     return (; zip(all_keys, all_values)...)  # NamedTuple
 end
