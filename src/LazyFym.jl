@@ -5,6 +5,15 @@ using Transducers
 import Base: size
 using ProgressMeter
 
+export Fym,  # types
+       # internalAPI
+       ∫,  # integration
+       Sim,  # simulation
+       # tools
+       evaluate, catevaluate, sequentialise  # postprocess
+
+export InputAffineQuadraticCostEnv
+
 
 include("types.jl")
 include("internalAPI.jl")
@@ -14,15 +23,6 @@ include("tools.jl")
 include("postprocess.jl")
 
 include("fymenvs.jl")
-
-export Fym,  # types
-       # internalAPI
-       ∫,  # integration
-       Sim,  # simulation
-       # tools
-       evaluate, catevaluate, sequentialise  # postprocess
-
-export InputAffineQuadraticCostEnv
 
 
 end  # module
