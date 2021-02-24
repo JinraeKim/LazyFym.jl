@@ -29,7 +29,7 @@ replacing `collect` by `tcollect` (thread-based) or `dcollect` (process-based), 
 For more details, see the below example code or `test/paralle.jl`.
 ### Predefined Environments
 LazyFym provides some predefined environments for reproducible codes.
-Take a look at `src/Envs.jl`.
+Take a look at `src/fymenvs.jl`.
 ### Performance improvement for simulations with long time span (Todo; experimental)
 (I'm trying to apply some ideas, e.g., `PartitionedSim`,
 but it seems slower than expected.)
