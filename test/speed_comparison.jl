@@ -36,14 +36,25 @@ function initialise()
     Δt = 0.01
     tf = 100.0
     ts = t0:Δt:tf
+<<<<<<< HEAD
     trajs(x0, ts; rendering=false) = Sim(env, x0, ts, ẋ, LazyFym.update; rendering=rendering) |> collect
     x0 = initial_condition(env)
     return trajs, x0, ts
+=======
+    # trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
+    trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> collect
+    x0 = initial_condition(env)
+    return trajs_evaluate, x0, ts
+>>>>>>> WIP
 end
 
 # test code
 function normal(traj, x0, ts)
+<<<<<<< HEAD
     traj(x0, ts; rendering=true)
+=======
+    traj(x0, ts)
+>>>>>>> WIP
 end
 
 function _partitioned(traj, x0, ts)
@@ -61,7 +72,11 @@ function partitioned(traj, x0, ts, file_path)
     split_sim(x0, ts0) = ScanEmit((x0, ts0, 1)) do (x, ts, i), ts_next
         x_next = nothing
         if x != nothing
+<<<<<<< HEAD
             data = traj(x, ts; rendering=true)
+=======
+            data = traj(x, ts)
+>>>>>>> WIP
             if data != []
                 jldopen(file_path, "a+") do file
                     file["$i"] = data
