@@ -20,16 +20,6 @@ end
 function initial_condition(env::SimpleEnv)
     return 2*(rand(10) .- 0.5)
 end
-# data postprocessing
-function postprocess(datum_raw)
-    _datum = Dict(:t => datum_raw.t, :x => datum_raw.x, :x_next => datum_raw.x_next)
-    datum = (; zip(keys(_datum), values(_datum))...)
-    return datum
-end
-# terminal_condition
-function terminal_condition(datum)
-    false
-end
 # to improve simulation speed
 _env = SimpleEnv()
 _x0 = initial_condition(_env)
@@ -46,15 +36,14 @@ function initialise()
     Δt = 0.01
     tf = 100.0
     ts = t0:Δt:tf
-    # trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
-    trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> collect
+    trajs(x0, ts; rendering=false) = Sim(env, x0, ts, ẋ, LazyFym.update; rendering=rendering) |> collect
     x0 = initial_condition(env)
-    return trajs_evaluate, x0, ts
+    return trajs, x0, ts
 end
 
 # test code
 function normal(traj, x0, ts)
-    traj(x0, ts)
+    traj(x0, ts; rendering=true)
 end
 
 function _partitioned(traj, x0, ts)
@@ -72,7 +61,7 @@ function partitioned(traj, x0, ts, file_path)
     split_sim(x0, ts0) = ScanEmit((x0, ts0, 1)) do (x, ts, i), ts_next
         x_next = nothing
         if x != nothing
-            data = traj(x, ts)
+            data = traj(x, ts; rendering=true)
             if data != []
                 jldopen(file_path, "a+") do file
                     file["$i"] = data

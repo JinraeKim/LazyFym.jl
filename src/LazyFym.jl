@@ -3,6 +3,7 @@ module LazyFym
 using Transducers
 
 import Base: size
+using ProgressMeter
 
 
 include("types.jl")
