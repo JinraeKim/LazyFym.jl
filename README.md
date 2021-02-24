@@ -67,9 +67,7 @@ function postprocess(_datum)
     datum = (; t = _datum.t, x = _datum.x, sin = sin.(_datum.x))
     return datum
 end
-```
 
-```julia
 function lazy()
     Random.seed!(1)
     env = LazyFym.InputAffineQuadraticCostEnv()
