@@ -1,8 +1,11 @@
 # LazyFym
 **LazyFym** is a general-purpose simulator for dynamical systems.
 ## Notes
+### Origin
 The origin of the name `Fym` is from the previous versions of flight (but also general-purpose) simulators:
 [fym](https://github.com/fdcl-nrf/fym) in `Python` and [FymEnvs.jl](https://github.com/fdcl-nrf/FymEnvs.jl) in `Julia`.
+### Deprecated
+It has taken low priority for now to improve the simulation speed when the time span is very long.
 
 ## Features
 ### Flexible usage pattern and nested environments
@@ -116,8 +119,8 @@ to improve the simulation speed (about 2~3 times faster in most cases).
 Postprocessing will make your simulator slow.
 Postprocessing after obtaining simulation data would be beneficial if your simulation itself has bottleneck.
 
-## Todo
-- [x] Nested environments (like `fym` and `FymEnvs`)
-- [x] Performance improvement (supporting nested env. makes it slow -> can be improved by telling LazyFym the information of your custom environments)
-- [x] Add an example of parallel simulation
+<!-- ## Todo -->
+<!-- - [x] Nested environments (like `fym` and `FymEnvs`) -->
+<!-- - [x] Performance improvement (supporting nested env. makes it slow -> can be improved by telling LazyFym the information of your custom environments) -->
+<!-- - [x] Add an example of parallel simulation -->
 <!-- - [ ] Performance improvement for simulations with long time span -->
