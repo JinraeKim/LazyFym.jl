@@ -37,7 +37,7 @@ function lazy()
     data = traj_x0(t1)
     p = plot(data.t, data.x |> sequentialise,
         seriestype=:scatter, label=["x1" "x2"])
-    savefig(p, "figures/lazy.pdf")
+    savefig(p, "figures/lazy.png")
 end
 
 function parallel()
@@ -55,7 +55,7 @@ function parallel()
     data_parallel_whole = data_parallel |> catTrajectory
     p = plot(data_parallel_whole.t, data_parallel_whole.x |> sequentialise,
         seriestype=:scatter, label=["x1" "x2"])
-    savefig(p, "figures/parallel.pdf")
+    savefig(p, "figures/parallel.png")
 end
 
 lazy()

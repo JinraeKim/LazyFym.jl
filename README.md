@@ -42,7 +42,7 @@ You can also perform numerical simulations with lazy evaluation,
 nested custom environments, eager or lazy data postprocessing, and parallel simulation.
 Please take a look at directory `test` (some examples may be omitted).
 
-![Test Image 1](./figures/lazy.pdf)
+![Test Image 1](./figures/lazy.png)
 
 ## Performance Tips
 ### Environment information
