@@ -1,15 +1,21 @@
 ## Simulator
 # Transducers
-Step(env, x0, t0, ẋ, update) = ScanEmit((x0, t0)) do (x, t), t_next
+Step(env, x0, t0, ẋ, update, renderer) = ScanEmit((x0, t0)) do (x, t), t_next
+    renderer == nothing ? nothing : ProgressMeter.next!(renderer)
     Δt = t_next - t
     datum, x_next = update(env, ẋ, x, t, Δt)
     return datum, (x_next, t_next)
 end
+ 
 # simulation (better for short simulation time)
-Sim(env::Fym, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
-Sim(env::Fym, x0, ts, ẋ) = Sim(env::Fym, x0, ts, ẋ, update)  # default data structure
-Sim(env::Fym, x0, ts) = Sim(env::Fym, x0, ts, ẋ, update)  # for test
-# partitioned simulation (better for long simulation time)
+function Sim(env::Fym, x0, ts, ẋ, update; rendering=false)
+    renderer = rendering ? ProgressMeter.Progress(length(ts), 0.001, "") : nothing
+    return ts |> Drop(1) |> Step(env, x0, ts[1], ẋ, update, renderer)
+end
+Sim(env::Fym, x0, ts, ẋ; rendering=false) = Sim(env::Fym, x0, ts, ẋ, update; rendering=rendering)  # default data structure
+Sim(env::Fym, x0, ts; rendering=false) = Sim(env::Fym, x0, ts, ẋ, update; rendering=rendering)  # for test
+
+# partitioned simulation (NOTICE: probably gonna be deprecated)
 function PartitionedSim(trajs, x0, ts; horizon=1000)
     ts_length = ts |> collect |> length
     if ts_length < horizon
@@ -35,4 +41,3 @@ function PartitionedSim(trajs, x0, ts; horizon=1000)
     data = vcat(_data...)
     return data
 end
-

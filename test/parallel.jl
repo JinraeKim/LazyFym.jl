@@ -28,29 +28,43 @@ function postprocess(datum_raw)
 end
 # terminal_condition
 function terminal_condition(datum)
-    return norm(datum.x) < 1e-3
+    # return norm(datum.x) < 1e-3
+    return false
 end
+# to improve simulation speed
+_env = SimpleEnv()
+_x0 = initial_condition(_env)
+_size = LazyFym.size(_env, _x0)
+_flatten_length = LazyFym.flatten_length(_env, _x0)
+_index = LazyFym.index(_env, _x0, 1:_flatten_length)
+size(env::SimpleEnv, x) = _size
+flatten_length(env::SimpleEnv, x) = _flatten_length
+index(env::SimpleEnv, x) = _index
 
 # test code
 function parallel()
     env = SimpleEnv()
     t0 = 0.0
     Δt = 0.01
-    tf = 10.0
+    tf = 100.0
     ts = t0:Δt:tf
     num = 1:10
-    @time x0s = num |> Map(i -> initial_condition(env)) |> collect  # initial conditions
+    x0s = num |> Map(i -> initial_condition(env)) |> collect  # initial conditions
     # simulator
-    trajs_evaluate(x0, ts) = Sim(env, x0, ts, ẋ) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
+    trajs_evaluate(x0, ts; rendering=false) = Sim(env, x0, ts, ẋ; rendering=rendering) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
     # single scenario
     n = rand(num)
     data_single = Dict()
-    @time data_single["raw"] = trajs_evaluate(x0s[n], ts)  # single scenario
+    println("Case: single scenario with rendering")
+    data_single["raw"] = trajs_evaluate(x0s[n], ts, rendering=true)  # single scenario
+    @time trajs_evaluate(x0s[n], ts)  # to check speed
     data_single["dict"] = zip(keys(data_single["raw"]), values(data_single["raw"])) |> Dict
     data_single["df"] = DataFrame(data_single["dict"])
-    # multiple scenarios (parallel simulation with various initial conditions)
+    # multiple scenarios (NOTICE: you should run codes with option -t such as `julia -t 4`)
     data_parallel = Dict()
+    println("Case: multiple scenarios without rendering (parallel)")
     data_parallel["raw"] = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # tcollect for thread-based parallel computing
+    @time x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # to check speed
     data_parallel["df"] = DataFrame(Dict("x0s" => x0s, "trajs" => data_parallel["raw"]))
     data_parallel["cat"] = data_parallel["df"].trajs |> catevaluate
     # save and load compatiblity with JLD2 and FileIO

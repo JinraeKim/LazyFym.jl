@@ -3,6 +3,16 @@ module LazyFym
 using Transducers
 
 import Base: size
+using ProgressMeter
+
+export Fym,  # types
+       # internalAPI
+       ∫,  # integration
+       Sim,  # simulation
+       # tools
+       evaluate, catevaluate, sequentialise  # postprocess
+
+export InputAffineQuadraticCostEnv
 
 
 include("types.jl")
@@ -13,13 +23,6 @@ include("tools.jl")
 include("postprocess.jl")
 
 include("fymenvs.jl")
-
-export Fym,
-       ∫,
-       Sim,
-       evaluate, catevaluate, sequentialise
-
-export InputAffineQuadraticCostEnv
 
 
 end  # module
