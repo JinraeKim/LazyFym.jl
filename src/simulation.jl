@@ -9,7 +9,7 @@ end
 Sim(env::Fym, x0, ts, ẋ, update) = foldxl(|>, [ts, Drop(1), Step(env, x0, ts[1], ẋ, update)])
 Sim(env::Fym, x0, ts, ẋ) = Sim(env::Fym, x0, ts, ẋ, update)  # default data structure
 Sim(env::Fym, x0, ts) = Sim(env::Fym, x0, ts, ẋ, update)  # for test
-# partitioned simulation (better for long simulation time)
+# partitioned simulation (NOTICE: probably gonna be deprecated)
 function PartitionedSim(trajs, x0, ts; horizon=1000)
     ts_length = ts |> collect |> length
     if ts_length < horizon

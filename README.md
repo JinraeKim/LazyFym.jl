@@ -18,10 +18,6 @@ In addition,
 LazyFym does not restrict the forms of your custom environments
 and thus provides a general-purpose interface.
 You can take either eager or lazy data postprocessing with LazyFym.
-Since LazyFym automatically calculate the information of environments (including size, flatten_length, etc.)
-and may result in performance degeneration,
-you should consider extend `LazyFym` functions for your custom environments such as `LazyFym.size`
-to improve the simulation speed.
 ### Parallelism
 It is not seemingly different from the sequential simulation.
 For example,
@@ -128,8 +124,18 @@ end
 result = parallel()
 nothing
 ```
+## Performance Tips
+### Environment information
+Since LazyFym automatically calculate the information of environments (including size, flatten_length, etc.)
+and may result in performance degeneration,
+you should consider extend `LazyFym` functions for your custom environments such as `LazyFym.size`
+to improve the simulation speed (about 2~3 times faster in most cases).
+### Postprocess data after simulation
+Postprocessing will make your simulator slow.
+Postprocessing after obtaining simulation data would be beneficial if your simulation itself has bottleneck.
+
 ## Todo
 - [x] Nested environments (like `fym` and `FymEnvs`)
 - [x] Performance improvement (supporting nested env. makes it slow -> can be improved by telling LazyFym the information of your custom environments)
 - [x] Add an example of parallel simulation
-- [ ] Performance improvement for simulations with long time span
+<!-- - [ ] Performance improvement for simulations with long time span -->
