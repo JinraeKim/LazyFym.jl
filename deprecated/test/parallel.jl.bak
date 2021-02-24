@@ -51,7 +51,7 @@ function parallel()
     num = 1:10
     x0s = num |> Map(i -> initial_condition(env)) |> collect  # initial conditions
     # simulator
-    trajs_evaluate(x0, ts; rendering=false) = Sim(env, x0, ts, ẋ; rendering=rendering) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> evaluate
+    trajs_evaluate(x0, ts; rendering=false) = Sim(env, x0, ts, ẋ; rendering=rendering) |> TakeWhile(!terminal_condition) |> Map(postprocess) |> trajectory
     # single scenario
     n = rand(num)
     data_single = Dict()

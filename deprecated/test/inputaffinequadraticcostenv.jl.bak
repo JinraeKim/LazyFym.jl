@@ -28,7 +28,7 @@ function test()
     tf = 100.0
     ts = t0:Δt:tf
     x0 = initial_condition(env)
-    traj(x0, ts) = Sim(env, x0, ts, ẋ) |> Map(postprocess) |> evaluate
+    traj(x0, ts) = Sim(env, x0, ts, ẋ) |> Map(postprocess) |> trajectory
     @time data = traj(x0, ts)
     plot(data.t, sequentialise(data.x))
 end

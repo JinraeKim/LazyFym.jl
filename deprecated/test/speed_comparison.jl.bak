@@ -109,5 +109,5 @@ println("partitioned")
 data_partitioned = @btime partitioned($traj, $x0, $ts, file_path)
 # data_partitioned = partitioned(traj, x0, ts, file_path)
 @test data == vcat(data_partitioned...)
-# data_evaluated = @btime data |> evaluate
+# data_evaluated = @btime data |> trajectory
 nothing
