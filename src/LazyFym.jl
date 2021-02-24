@@ -14,10 +14,12 @@ include("postprocess.jl")
 
 include("fymenvs.jl")
 
-export Fym,
-       ∫,
-       Sim,
-       evaluate, catevaluate, sequentialise
+export Fym,  # types
+       # internalAPI
+       ∫,  # integration
+       Sim,  # simulation
+       # tools
+       evaluate, catevaluate, sequentialise  # postprocess
 
 export InputAffineQuadraticCostEnv
 
