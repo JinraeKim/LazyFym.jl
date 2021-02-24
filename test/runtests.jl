@@ -39,6 +39,7 @@ function lazy()
         seriestype=:scatter, label=["x1" "x2"])
     savefig(p, "figures/lazy.png")
 end
+lazy()
 
 function parallel()
     Random.seed!(1)
@@ -57,6 +58,4 @@ function parallel()
         seriestype=:scatter, label=["x1" "x2"])
     savefig(p, "figures/parallel.png")
 end
-
-lazy()
 parallel()
