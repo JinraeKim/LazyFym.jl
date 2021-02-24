@@ -18,7 +18,8 @@ In addition,
 LazyFym does not restrict the forms of your custom environments
 and thus provides a general-purpose interface.
 You can take either eager or lazy data postprocessing with LazyFym.
-Since LazyFym automatically calculate the information of environments (including size, flatten_length, etc.),
+Since LazyFym automatically calculate the information of environments (including size, flatten_length, etc.)
+and may result in performance degeneration,
 you should consider extend `LazyFym` functions for your custom environments such as `LazyFym.size`
 to improve the simulation speed.
 ### Parallelism
