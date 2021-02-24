@@ -26,7 +26,7 @@ It is not seemingly different from the sequential simulation.
 For example,
 you can perform simulation with various initial conditions by
 replacing `collect` by `tcollect` (thread-based) or `dcollect` (process-based), which are provided by `Transducers.jl`.
-For more details, see the below example code or `test/paralle.jl`.
+For more details, see the below example code or `test/parallel.jl`.
 You should run Julia codes with option `-t`, for example, `julia -t 4`
 for thread-based parallel simulation.
 ### Predefined Environments
