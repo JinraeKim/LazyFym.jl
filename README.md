@@ -33,9 +33,9 @@ for thread-based parallel simulation.
 ### Predefined Environments
 LazyFym provides some predefined environments for reproducible codes.
 Take a look at `src/fymenvs.jl`.
-### Performance improvement for simulations with long time span (Todo; experimental)
-(I'm trying to apply some ideas, e.g., `PartitionedSim`,
-but it seems slower than expected.)
+<!-- ### Performance improvement for simulations with long time span (Todo; experimental) -->
+<!-- (I'm trying to apply some ideas, e.g., `PartitionedSim`, -->
+<!-- but it seems slower than expected.) -->
 
 ## Interface
 LazyFym provides a Type `Fym`.
