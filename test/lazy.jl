@@ -1,8 +1,6 @@
 using LazyFym
 using Transducers
-
-using Plots
-
+using InfiniteArrays
 
 function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
     u = command(env, x)
@@ -25,12 +23,12 @@ function test()
     env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
     Δt = 0.01
-    tf = 100.0
-    ts = t0:Δt:tf
+    # tf = 100.0
+    # ts = t0:Δt:tf
+    # ts = t0:Δt:∞
     x0 = initial_condition(env)
-    traj(x0, ts) = Sim(env, x0, ts, ẋ) |> Map(postprocess) |> evaluate
-    @time data = traj(x0, ts)
-    plot(data.t, sequentialise(data.x))
+    sim(x0) = t -> Sim(env, x0, t0:Δt:∞, ẋ) |> TakeWhile(datum -> datum.t <= t) |> collect
+    traj = sim(x0)
+    @show traj(0.3)
 end
-
 test()
