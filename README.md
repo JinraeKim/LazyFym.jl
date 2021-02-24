@@ -21,7 +21,7 @@ complex dynamical systems.
 It is possible to lazily evaluate your simulator.
 To do so,
 you would need to incorporate packages related to lazy evaluation
-such as [InfiniteArrays](https://github.com/JuliaArrays/InfiniteArrays.jl).
+such as [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl).
 ### Parallelism
 It is not seemingly different from the sequential simulation.
 For example,
@@ -38,9 +38,19 @@ Take a look at `src/fymenvs.jl`.
 <!-- but it seems slower than expected.) -->
 
 ## Interface
+### Types
 LazyFym provides a Type `Fym`.
 `Fym` contains the information of an environment (system),
 probably consisting of other `Fym`s as sub-environments (sub-systems).
+### With other packages
+LazyFym is highly based on `Transducers.jl` so various functionalities provided by
+`Transducers.jl` can be applied.
+Therefore, it is **highly recommended** to get used to `Transducers.jl` for the users of LazyFym (e.g., [glossary of Transducers.jl](https://juliafolds.github.io/Transducers.jl/dev/explanation/glossary/)).
+In addition,
+the following list of packages would be useful:
+- [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl) for dealing with infinite array and lazy evaluation
+- [StructArrays.jl](https://github.com/JuliaArrays/StructArrays.jl), [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl), and [JLD2.jl](https://github.com/JuliaIO/JLD2.jl) for handling simulation data
+
 ### Quick start
 You can also perform numerical simulations with lazy evaluation,
 nested custom environments, eager or lazy data postprocessing, and parallel simulation.
