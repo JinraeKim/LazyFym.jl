@@ -59,7 +59,7 @@ function parallel()
     @time trajs_evaluate(x0s[n], ts)  # to check speed
     data_single["dict"] = zip(keys(data_single["raw"]), values(data_single["raw"])) |> Dict
     data_single["df"] = DataFrame(data_single["dict"])
-    # multiple scenarios (parallel simulation with various initial conditions)
+    # multiple scenarios (NOTICE: you should run codes with option -t such as `julia -t 4`)
     data_parallel = Dict()
     data_parallel["raw"] = x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # tcollect for thread-based parallel computing
     @time x0s |> Map(x0 -> trajs_evaluate(x0, ts)) |> tcollect  # to check speed
