@@ -39,12 +39,12 @@ function single()
     sim(x0) = t -> Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t) |> Map(postprocess(env)) |> collect |> StructArray
     traj_x0 = sim(x0)
     data = traj_x0(t1)
-    # data = @lazy traj_x0(t1);  # for lazy evaluation
+    # data = @lazy traj_x0(t1);  # for lazy evaluation, see Lazy.jl
     l = @layout [a b]
     p_x = plot(data.t, data.x |> sequentialise,
-        color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
+        colour=[:grey :black], linestyle=[:solid :dash], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-2, 3))
     p_u = plot(data.t, data.u,
-        color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
+        colour=:black, linestyle=[:solid], xlabel=L"t", label=L"u", ylim=(-2, 3))
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/single.png")
 end
@@ -65,10 +65,10 @@ function parallel()
     l = @layout [a b]
     p_x = plot()
     _ = data_parallel |> Map(data -> plot!(p_x, data.t, data.x |> sequentialise,
-                                           xlabel=L"t", label=[nothing nothing], color=[:red :blue], ylim=(-3, 3))) |> collect
+                                           xlabel=L"t", label=[nothing nothing], colour=[:grey :black], linestyle=[:solid :dash], ylim=(-2, 3))) |> collect
     p_u = plot()
     _ = data_parallel |> Map(data -> plot!(p_u, data.t, data.u,
-                                           xlabel=L"t", label=[nothing nothing], color=[:magenta], ylim=(-3, 3))) |> collect
+                                           xlabel=L"t", label=[nothing nothing], colour=:black, linestyle=[:solid], ylim=(-2, 3))) |> collect
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
