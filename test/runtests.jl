@@ -1,6 +1,7 @@
 using LazyFym
 using Transducers
 
+# using Lazy
 using InfiniteArrays
 using StructArrays
 using Random
@@ -27,7 +28,7 @@ function postprocess(env::LazyFym.InputAffineQuadraticCostEnv)
     end
 end
 
-function lazy()
+function single()
     Random.seed!(1)
     env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
@@ -38,15 +39,16 @@ function lazy()
     sim(x0) = t -> Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t) |> Map(postprocess(env)) |> collect |> StructArray
     traj_x0 = sim(x0)
     data = traj_x0(t1)
+    # data = @lazy traj_x0(t1);  # for lazy evaluation
     l = @layout [a b]
     p_x = plot(data.t, data.x |> sequentialise,
         color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
     p_u = plot(data.t, data.u,
         color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
     p = plot(p_x, p_u, layout = l)
-    savefig(p, "figures/lazy.png")
+    savefig(p, "figures/single.png")
 end
-lazy()
+single()
 
 function parallel()
     Random.seed!(1)

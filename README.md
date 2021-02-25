@@ -12,8 +12,6 @@ It has taken low priority for now to improve the simulation speed when the time 
 LazyFym is highly based on Julia's pipeline syntax and [Transducers.jl](https://github.com/JuliaFolds/Transducers.jl).
 This makes it possible to construct a simulator using Transducers.
 Since Transducers are composable, it is highly flexible to make your own simulator.
-For example,
-You can take either eager or lazy data postprocessing with LazyFym.
 Also,
 LazyFym supports **nested environments** so that users can deal with
 complex dynamical systems.
@@ -21,7 +19,7 @@ complex dynamical systems.
 It is possible to lazily evaluate your simulator.
 To do so,
 you would need to incorporate packages related to lazy evaluation
-such as [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl).
+such as [Lazy.jl](https://github.com/MikeInnes/Lazy.jl) and [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl).
 ### Parallelism
 It is not seemingly different from the sequential simulation.
 For example,
@@ -48,7 +46,7 @@ LazyFym is highly based on `Transducers.jl` so various functionalities provided 
 Therefore, it is **highly recommended** to get used to `Transducers.jl` for the users of LazyFym (e.g., [glossary of Transducers.jl](https://juliafolds.github.io/Transducers.jl/dev/explanation/glossary/)).
 In addition,
 the following list of packages would be useful:
-- [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl) for dealing with infinite array and lazy evaluation
+- [Lazy.jl](https://github.com/MikeInnes/Lazy.jl) and [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl) for dealing with infinite array and lazy evaluation
 - [StructArrays.jl](https://github.com/JuliaArrays/StructArrays.jl), [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl), and [JLD2.jl](https://github.com/JuliaIO/JLD2.jl) for handling simulation data
 
 ### Quick start
@@ -60,6 +58,7 @@ Please take a look at directory `test` (some examples may be omitted).
 using LazyFym
 using Transducers
 
+# using Lazy
 using InfiniteArrays
 using StructArrays
 using Random
@@ -86,7 +85,7 @@ function postprocess(env::LazyFym.InputAffineQuadraticCostEnv)
     end
 end
 
-function lazy()
+function single()
     Random.seed!(1)
     env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
@@ -97,17 +96,18 @@ function lazy()
     sim(x0) = t -> Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t) |> Map(postprocess(env)) |> collect |> StructArray
     traj_x0 = sim(x0)
     data = traj_x0(t1)
+    # data = @lazy traj_x0(t1);  # for lazy evaluation
     l = @layout [a b]
     p_x = plot(data.t, data.x |> sequentialise,
-        seriestype=:scatter, color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
+        color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
     p_u = plot(data.t, data.u,
-        seriestype=:scatter, color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
+        color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
     p = plot(p_x, p_u, layout = l)
-    savefig(p, "figures/lazy.png")
+    savefig(p, "figures/single.png")
 end
-lazy()
+single()
 ```
-![lazy](./figures/lazy.png)
+![single](./figures/single.png)
 ```julia
 function parallel()
     Random.seed!(1)
@@ -119,13 +119,15 @@ function parallel()
     num = 10
     x0s = 1:num |> Map(i -> initial_condition(env))
     traj(x0) = Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t1) |> Map(postprocess(env)) |> collect
-    data_parallel = x0s |> Map(x0 -> traj(x0)) |> tcollect
-    data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray 
+    data_parallel = x0s |> Map(x0 -> traj(x0)) |> Map(StructArray) |> tcollect
+    # data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray   # merge data
     l = @layout [a b]
-    p_x = plot(data_parallel_whole.t, data_parallel_whole.x |> sequentialise,
-        color=[:red :blue], seriestype=:scatter, xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
-    p_u = plot(data_parallel_whole.t, data_parallel_whole.u,
-        color=[:magenta], seriestype=:scatter, xlabel=L"t", label=L"u", ylim=(-3, 3))
+    p_x = plot()
+    _ = data_parallel |> Map(data -> plot!(p_x, data.t, data.x |> sequentialise,
+                                           xlabel=L"t", label=[nothing nothing], color=[:red :blue], ylim=(-3, 3))) |> collect
+    p_u = plot()
+    _ = data_parallel |> Map(data -> plot!(p_u, data.t, data.u,
+                                           xlabel=L"t", label=[nothing nothing], color=[:magenta], ylim=(-3, 3))) |> collect
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
