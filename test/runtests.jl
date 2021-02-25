@@ -60,7 +60,7 @@ function parallel()
     x0s = 1:num |> Map(i -> initial_condition(env))
     traj(x0) = Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t1) |> Map(postprocess(env)) |> collect
     data_parallel = x0s |> Map(x0 -> traj(x0)) |> tcollect
-    data_parallel_whole = data_parallel |> Cat() |> StructArray 
+    data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray 
     l = @layout [a b]
     p_x = plot(data_parallel_whole.t, data_parallel_whole.x |> sequentialise,
         color=[:red :blue], seriestype=:scatter, xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
