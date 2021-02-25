@@ -46,7 +46,7 @@ LazyFym is highly based on `Transducers.jl` so various functionalities provided 
 Therefore, it is **highly recommended** to get used to `Transducers.jl` for the users of LazyFym (e.g., [glossary of Transducers.jl](https://juliafolds.github.io/Transducers.jl/dev/explanation/glossary/)).
 In addition,
 the following list of packages would be useful:
-- [Lazy.jl](https://github.com/MikeInnes/Lazy.jl) and [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl) for dealing with infinite array and lazy evaluation
+- [Lazy.jl](https://github.com/MikeInnes/Lazy.jl) and [InfiniteArrays.jl](https://github.com/JuliaArrays/InfiniteArrays.jl) for dealing with lazy evaluation and infinite array
 - [StructArrays.jl](https://github.com/JuliaArrays/StructArrays.jl), [DataFrames.jl](https://github.com/JuliaData/DataFrames.jl), and [JLD2.jl](https://github.com/JuliaIO/JLD2.jl) for handling simulation data
 
 ### Quick start
