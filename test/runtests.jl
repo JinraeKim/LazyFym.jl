@@ -40,9 +40,9 @@ function lazy()
     data = traj_x0(t1)
     l = @layout [a b]
     p_x = plot(data.t, data.x |> sequentialise,
-        seriestype=:scatter, color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
+        color=[:red :blue], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
     p_u = plot(data.t, data.u,
-        seriestype=:scatter, color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
+        color=[:magenta], xlabel=L"t", label=L"u", ylim=(-3, 3))
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/lazy.png")
 end
@@ -58,13 +58,15 @@ function parallel()
     num = 10
     x0s = 1:num |> Map(i -> initial_condition(env))
     traj(x0) = Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t1) |> Map(postprocess(env)) |> collect
-    data_parallel = x0s |> Map(x0 -> traj(x0)) |> tcollect
-    data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray 
+    data_parallel = x0s |> Map(x0 -> traj(x0)) |> Map(StructArray) |> tcollect
+    # data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray   # merge data
     l = @layout [a b]
-    p_x = plot(data_parallel_whole.t, data_parallel_whole.x |> sequentialise,
-        color=[:red :blue], seriestype=:scatter, xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-3, 3))
-    p_u = plot(data_parallel_whole.t, data_parallel_whole.u,
-        color=[:magenta], seriestype=:scatter, xlabel=L"t", label=L"u", ylim=(-3, 3))
+    p_x = plot()
+    _ = data_parallel |> Map(data -> plot!(p_x, data.t, data.x |> sequentialise,
+                                           xlabel=L"t", label=[nothing nothing], color=[:red :blue], ylim=(-3, 3))) |> collect
+    p_u = plot()
+    _ = data_parallel |> Map(data -> plot!(p_u, data.t, data.u,
+                                           xlabel=L"t", label=[nothing nothing], color=[:magenta], ylim=(-3, 3))) |> collect
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
