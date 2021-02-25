@@ -69,13 +69,12 @@ using Plots, LaTeXStrings
 function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
     u = command(env, x)
     ẋ = LazyFym.ẋ(env, x, t, u)
-    return ẋ
 end
 _env = LazyFym.InputAffineQuadraticCostEnv()
 command(env, x) = LazyFym.u_optimal(_env, x)  # you can customise it
 
 function initial_condition(env::LazyFym.InputAffineQuadraticCostEnv)
-    return 2*(rand(2) .- 0.5)
+    2*(rand(2) .- 0.5)
 end
 
 function postprocess(env::LazyFym.InputAffineQuadraticCostEnv)
