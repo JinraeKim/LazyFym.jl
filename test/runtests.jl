@@ -6,6 +6,7 @@ using InfiniteArrays
 using StructArrays
 using Random
 using Plots, LaTeXStrings
+theme(:dark)
 
 
 function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
@@ -23,8 +24,10 @@ function postprocess(env::LazyFym.InputAffineQuadraticCostEnv)
     function _postprocess(_datum)
         t = _datum.t
         x = _datum.x
+        x1 = _datum.x[1]
+        x2 = _datum.x[2]
         u = command(env, x)
-        datum = (; t = t, x = x, u = u)
+        datum = (; t = t, x = x, x1=x1, x2=x2, u = u)
     end
 end
 
@@ -32,7 +35,7 @@ function single()
     Random.seed!(1)
     env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
-    t1 = 10.00
+    t1 = 5.00
     Δt = 0.01
     ts = t0:Δt:∞
     x0 = initial_condition(env)
@@ -40,12 +43,14 @@ function single()
     traj_x0 = sim(x0)
     data = traj_x0(t1)
     # data = @lazy traj_x0(t1);  # for lazy evaluation, see Lazy.jl
-    l = @layout [a b]
-    p_x = plot(data.t, data.x |> sequentialise,
-               colour=[:grey :black], linestyle=[:solid :dash], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-2, 3))
+    l = @layout [a; b; c]
+    p_x1 = plot(data.t, data.x1,
+                ylabel=L"x_{1}", label=nothing, ylim=(-2, 3))
+    p_x2 = plot(data.t, data.x2,
+                ylabel=L"x_{2}", label=nothing, ylim=(-2, 3))
     p_u = plot(data.t, data.u,
-               colour=:black, linestyle=[:solid], xlabel=L"t", label=L"u", ylim=(-2, 3))
-    p = plot(p_x, p_u, layout = l)
+               xlabel=L"t", ylabel=L"u", label=nothing, ylim=(-2, 3))
+    p = plot(p_x1, p_x2, p_u, layout = l)
     savefig(p, "figures/single.png")
 end
 
@@ -53,7 +58,7 @@ function parallel()
     Random.seed!(1)
     env = LazyFym.InputAffineQuadraticCostEnv()
     t0 = 0.0
-    t1 = 10.00
+    t1 = 5.00
     Δt = 0.01
     ts = t0:Δt:∞
     num = 10
@@ -61,14 +66,20 @@ function parallel()
     traj(x0) = Sim(env, x0, ts, ẋ) |> TakeWhile(datum -> datum.t <= t1) |> Map(postprocess(env)) |> collect
     data_parallel = x0s |> Map(x0 -> traj(x0)) |> Map(StructArray) |> tcollect
     # data_parallel_whole = data_parallel |> TCat(Threads.nthreads()) |> collect |> StructArray   # merge data
-    l = @layout [a b]
-    p_x = plot()
-    _ = data_parallel |> Map(data -> plot!(p_x, data.t, data.x |> sequentialise,
-                                           xlabel=L"t", label=[nothing nothing], colour=[:grey :black], linestyle=[:solid :dash], ylim=(-2, 3))) |> collect
+    l = @layout [a; b; c]
+    p_x1 = plot()
+    _ = data_parallel |> Map(data -> plot!(p_x1, data.t, data.x1,
+                                           ylabel=L"x_{1}", label=nothing,
+                                           ylim=(-2, 3))) |> collect
+    p_x2 = plot()
+    _ = data_parallel |> Map(data -> plot!(p_x2, data.t, data.x2,
+                                           ylabel=L"x_{2}", label=nothing,
+                                           ylim=(-2, 3))) |> collect
     p_u = plot()
     _ = data_parallel |> Map(data -> plot!(p_u, data.t, data.u,
-                                           xlabel=L"t", label=[nothing nothing], colour=:black, linestyle=[:solid], ylim=(-2, 3))) |> collect
-    p = plot(p_x, p_u, layout = l)
+                                           xlabel=L"t", ylabel=L"u", label=nothing,
+                                           ylim=(-2, 3))) |> collect
+    p = plot(p_x1, p_x2, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
 
