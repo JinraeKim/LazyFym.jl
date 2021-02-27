@@ -6,7 +6,7 @@ using InfiniteArrays
 using StructArrays
 using Random
 using Plots, LaTeXStrings
-theme(:dark)
+theme(:bright)
 
 
 function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
@@ -45,11 +45,11 @@ function single()
     # data = @lazy traj_x0(t1);  # for lazy evaluation, see Lazy.jl
     l = @layout [a; b; c]
     p_x1 = plot(data.t, data.x1,
-                ylabel=L"x_{1}", label=nothing, ylim=(-2, 3))
+                ylabel=L"x_{1}", label=nothing, ylim=(-1.5, 1.5))
     p_x2 = plot(data.t, data.x2,
-                ylabel=L"x_{2}", label=nothing, ylim=(-2, 3))
+                ylabel=L"x_{2}", label=nothing, ylim=(-1.5, 1.5))
     p_u = plot(data.t, data.u,
-               xlabel=L"t", ylabel=L"u", label=nothing, ylim=(-2, 3))
+               xlabel=L"t", ylabel=L"u", label=nothing, ylim=(-3, 3))
     p = plot(p_x1, p_x2, p_u, layout = l)
     savefig(p, "figures/single.png")
 end
@@ -70,15 +70,15 @@ function parallel()
     p_x1 = plot()
     _ = data_parallel |> Map(data -> plot!(p_x1, data.t, data.x1,
                                            ylabel=L"x_{1}", label=nothing,
-                                           ylim=(-2, 3))) |> collect
+                                           ylim=(-1.5, 1.5))) |> collect
     p_x2 = plot()
     _ = data_parallel |> Map(data -> plot!(p_x2, data.t, data.x2,
                                            ylabel=L"x_{2}", label=nothing,
-                                           ylim=(-2, 3))) |> collect
+                                           ylim=(-1.5, 1.5))) |> collect
     p_u = plot()
     _ = data_parallel |> Map(data -> plot!(p_u, data.t, data.u,
                                            xlabel=L"t", ylabel=L"u", label=nothing,
-                                           ylim=(-2, 3))) |> collect
+                                           ylim=(-3, 3))) |> collect
     p = plot(p_x1, p_x2, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
