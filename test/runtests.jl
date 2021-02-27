@@ -42,13 +42,12 @@ function single()
     # data = @lazy traj_x0(t1);  # for lazy evaluation, see Lazy.jl
     l = @layout [a b]
     p_x = plot(data.t, data.x |> sequentialise,
-        colour=[:grey :black], linestyle=[:solid :dash], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-2, 3))
+               colour=[:grey :black], linestyle=[:solid :dash], xlabel=L"t", label=[L"x_{1}" L"x_{2}"], ylim=(-2, 3))
     p_u = plot(data.t, data.u,
-        colour=:black, linestyle=[:solid], xlabel=L"t", label=L"u", ylim=(-2, 3))
+               colour=:black, linestyle=[:solid], xlabel=L"t", label=L"u", ylim=(-2, 3))
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/single.png")
 end
-single()
 
 function parallel()
     Random.seed!(1)
@@ -72,4 +71,6 @@ function parallel()
     p = plot(p_x, p_u, layout = l)
     savefig(p, "figures/parallel.png")
 end
-parallel()
+
+# single()
+# parallel()
