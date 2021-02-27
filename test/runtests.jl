@@ -6,7 +6,6 @@ using InfiniteArrays
 using StructArrays
 using Random
 using Plots, LaTeXStrings
-theme(:bright)
 
 
 function ẋ(env::LazyFym.InputAffineQuadraticCostEnv, x, t)
