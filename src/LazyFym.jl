@@ -10,7 +10,7 @@ export Fym,  # types
        ∫,  # integration
        Sim,  # simulation
        # tools
-       trajectory, catTrajectory, sequentialise  # postprocess
+       sequentialise  # postprocess
 
 export InputAffineQuadraticCostEnv
 

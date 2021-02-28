@@ -20,14 +20,14 @@ function f(env::InputAffineQuadraticCostEnv, x)
     x1 = x[1]
     x2 = x[2]
     f1 = -x1 + x2
-    f2 = -0.5x1 -0.5(1-(cos(2x1)+2)^2)
+    f2 = -0.5*x1 -0.5*x2*(1-(cos(2*x1)+2)^2)
     return  [f1, f2]
 end
 
 function g(env::InputAffineQuadraticCostEnv, x)
     x1 = x[1]
     g1 = 0
-    g2 = cos(2x1 +2)
+    g2 = cos(2*x1) +2
     return [g1, g2]
 end
 
