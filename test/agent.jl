@@ -18,11 +18,19 @@ struct RLEnv <: Fym
     policy::Policy
 end
 # dynamics
-function ẋ(rlenv::RLEnv, _x, t)
+function ẋ(rlenv::RLEnv, _x, t; action=0.0)
     x = _x.env
-    u = command(rlenv.policy, x, t)
-    ẋ = LazyFym.ẋ(rlenv.env, x, t, u)
+    ẋ = LazyFym.ẋ(rlenv.env, x, t, action)
     (; env = ẋ)
+end
+# update (RL agent generates zero-order-hold (ZOH) action in this scenario)
+function update(rlenv::RLEnv, ẋ, x, t, Δt)
+    action = command(rlenv.policy, x.env, t)
+    _datum = Dict(:x => x, :t => t, :action => action)
+    x_next = ∫(rlenv, ẋ, x, t, Δt; action=action)  # `action` will be a kwarg of ẋ
+    _datum[:x_next] = x_next
+    datum = (; zip(keys(_datum), values(_datum))...)
+    return datum, x_next
 end
 # initial condition
 function initial_condition(rlenv::RLEnv)
@@ -39,6 +47,6 @@ function main()
     ts = t0:Δt:tf
     x0 = initial_condition(rlenv)
     # x0 = LazyFym.initial_condition(rlenv)
-    traj(x0) = Sim(rlenv, x0, ts, ẋ) |> collect |> StructArray
+    traj(x0) = Sim(rlenv, x0, ts, ẋ, update) |> collect |> StructArray
     data = traj(x0)
 end
