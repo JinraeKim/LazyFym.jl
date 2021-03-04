@@ -18,7 +18,7 @@ end
 function ẋ(rlenv::RLEnv, _x, t)
     x = _x.env
     u = command(rlenv.policy, x, t)
-    ẋ = LazyFym.ẋ(rlenv.env, x, t)
+    ẋ = LazyFym.ẋ(rlenv.env, x, t, u)
     (; env = ẋ)
 end
 # initial condition
