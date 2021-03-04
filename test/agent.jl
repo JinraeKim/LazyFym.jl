@@ -1,6 +1,9 @@
 using LazyFym
 using Transducers
 
+using Random
+using StructArrays
+
 
 ## Policy
 abstract type Policy end
