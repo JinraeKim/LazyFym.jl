@@ -1,6 +1,7 @@
 ## Convenient tools
 # all-zero dynamics (for test)
 function ẋ(env::Fym, x, t)
+    println("all-zero dynamics for test; see `LazyFym.ẋ`")
     env_names = names(env)
     if env_names == []
         return zero(x)
