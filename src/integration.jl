@@ -38,5 +38,5 @@ function ∫(env, ẋ, x, t, Δt, args...; integrator=rk4, kwargs...)
         return ẋ_raw = raw(env, ẋ_evaluated)
     end
     _x_next = integrator(_ẋ, _x, t, Δt, args...; kwargs...)
-    return process(_x_next, env_index_nt, env_size_nt)
+    process(_x_next, env_index_nt, env_size_nt)
 end

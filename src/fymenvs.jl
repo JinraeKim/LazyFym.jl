@@ -31,6 +31,15 @@ function g(env::InputAffineQuadraticCostEnv, x)
     return [g1, g2]
 end
 
+"""
+    r(env, x, u)
+
+Calculate running cost, i.e., V = ∫r dt.
+"""
+function r(env::InputAffineQuadraticCostEnv, x, u)
+    x'*env.Q*x + u'*env.R*u
+end
+
 function V_optimal(env::InputAffineQuadraticCostEnv, x)
     return x'*env.P*x
 end
