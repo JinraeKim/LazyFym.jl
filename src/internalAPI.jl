@@ -66,7 +66,11 @@ end
 # processed view
 function process(_x, env_index_nt, env_size_nt)
     if typeof(env_index_nt) <: AbstractRange
-        return reshape(_x[env_index_nt], env_size_nt...)
+        if env_size_nt == ()
+            return _x[env_index_nt][1]  # scalar
+        else
+            return reshape(_x[env_index_nt], env_size_nt...)
+        end
     else
         index_names = keys(env_index_nt)
         processed_values = index_names |> Map(name -> process(_x, env_index_nt[name], env_size_nt[name]))
