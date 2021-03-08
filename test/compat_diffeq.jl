@@ -19,10 +19,11 @@ struct NestedEnv <: Fym
     env1::Env1
     env2::Env2
 end
-LazyFym.initial_condition(env::Env1) = 1
+LazyFym.initial_condition(env::Env1) = rand(2)
 LazyFym.initial_condition(env::Env21) = rand(5, 3)
 LazyFym.initial_condition(env::Env22) = rand(10)
 nestedenv = NestedEnv(Env1(), Env2(Env21(), Env22()))
+# nestedenv = Env2(Env21(), Env22())
 x0 = LazyFym.initial_condition(nestedenv)
 _x0 = LazyFym.raw(nestedenv, x0)
 
@@ -31,6 +32,9 @@ function f(x, p, t)
     dx21 = -p[2]*x.env2.env21
     dx22 = -p[3]*x.env2.env22
     (; env1 = dx1, env2 = (; env21 = dx21, env22 = dx22))
+    # dx21 = -p[2]*x.env21
+    # dx22 = -p[3]*x.env22
+    # (; env21=dx21, env22=dx22)
 end
 env_index_nt, env_size_nt = LazyFym.preprocess(nestedenv, x0)
 _f(_x, p, t) = LazyFym.raw(nestedenv, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
@@ -52,6 +56,7 @@ terminate_condition(u, t, integrator) = norm(u) - 1e-3  # == 0
 terminate_affect!(integrator) = terminate!(integrator)
 cb_terminate = ContinuousCallback(terminate_condition, terminate_affect!)
 cbset = CallbackSet(cb_param_update, cb_save, cb_terminate)
-@time sol = solve(prob, Tsit5(); p=p0, callback=cbset)
+# @time sol = solve(prob, Tsit5(); p=p0, callback=cbset)
+@time sol = solve(prob, Tsit5(); p=p0)
 xs = sol.u |> Map(_x -> LazyFym.process(_x, env_index_nt, env_size_nt)) |> collect
 plot(sol)
