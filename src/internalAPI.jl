@@ -113,3 +113,36 @@ function index(env::Fym, x0, _range)
         return (; zip(env_names, env_indices)...)  # NamedTuple
     end
 end
+
+## test
+function value end
+macro myMacro(ex, mystruct)
+    local tmp = ex.args[3]
+    local valueExpr = :(LazyFym.value($mystruct))
+    local multiplyExpr = Expr(:call, :*, tmp, valueExpr)
+    ex.args[3] = multiplyExpr
+    return esc(ex)
+end
+
+"""
+It must be called in the global scope for method definition.
+"""
+macro register(env, x0)
+    ex = quote
+        if typeof($(env)) <: Fym
+            local env_names = LazyFym.names($(env))
+            LazyFym.names(env::typeof($(env))) = env_names
+            local env_size = LazyFym.size($(env), $(x0))
+            LazyFym.size(env::typeof($(env)), x0) = env_size
+            local env_flatten_length = LazyFym.flatten_length($(env), $(x0))
+            LazyFym.flatten_length(env::typeof($(env)), x0) = env_flatten_length
+            local env_index = LazyFym.index($(env), $(x0), 1:env_flatten_length)
+            LazyFym.index(env::typeof($(env)), x0, _range) = env_index
+            local env_index_nt, env_size_nt = LazyFym.preprocess($(env), $(x0))
+            LazyFym.preprocess(env::typeof($(env)), x0) = env_index_nt, env_size_nt
+        else
+            error("Invalid environment")
+        end
+    end
+    esc(ex)
+end
