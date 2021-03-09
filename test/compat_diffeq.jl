@@ -1,10 +1,8 @@
 using LazyFym
 using DifferentialEquations
-# using Plots
 using Transducers
 using InfiniteArrays
 using LinearAlgebra
-using Setfield
 
 struct Env1 <: Fym
 end
@@ -26,9 +24,9 @@ end
 LazyFym.initial_condition(env::Env1) = rand(2)
 LazyFym.initial_condition(env::Env21) = rand(5, 3)
 LazyFym.initial_condition(env::Env22) = rand(10)
-nestedenv = NestedEnv(Env1(), Env2(Env21(), Env22()))
-x0 = LazyFym.initial_condition(nestedenv)
-_x0 = LazyFym.raw(nestedenv, x0)
+env = NestedEnv(Env1(), Env2(Env21(), Env22()))
+x0 = LazyFym.initial_condition(env)
+_x0 = LazyFym.raw(env, x0)
 
 function f(x, p, t)
     dx1 = -p[1]*x.env1
@@ -36,9 +34,9 @@ function f(x, p, t)
     dx22 = -p[3]*x.env2.env22
     (; env1 = dx1, env2 = (; env21 = dx21, env22 = dx22))
 end
-env_index_nt, env_size_nt = LazyFym.preprocess(nestedenv, x0)
+env_index_nt, env_size_nt = LazyFym.preprocess(env, x0)
 function _f(_x, p, t)
-    LazyFym.raw(nestedenv, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
+    LazyFym.raw(env, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
 end
 macro f_ode(f, env)
     ex = quote
@@ -77,9 +75,6 @@ function DifferentialEquations.ODEProblem(env::Fym, f, x0, tspan; kwargs...)
     _f(_x, p, t) = LazyFym.raw(env, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
     ODEProblem(_f, _x0, tspan; kwargs...)
 end
-# function DifferentialEquations.solve(env::Fym, prob, solver; kwargs...)
-#     sol = DifferentialEquations.solve(prob, solver; kwargs...)
-# end
 function my_process(env::Fym, dummy)
     x0 = dummy == nothing ? error("Give an example (dummy) to understand the structure of $(typeof(env))") : dummy
     env_index_nt, env_size_nt = LazyFym.preprocess(env, x0)
@@ -89,7 +84,20 @@ t0 = 0.0
 tf = 10.0
 tspan = (t0, tf)
 p0 = [1.0, 2, 3]
-prob = ODEProblem(nestedenv, f, x0, tspan)
+prob = ODEProblem(env, f, x0, tspan)
 sol = solve(prob, Tsit5(); p=p0, saveat=t0:0.01:tf)
-process = my_process(nestedenv, x0)
-xs = @show sol.u |> Map(process) |> collect
+process = my_process(env, x0)
+xs = sol.u |> Map(process) |> collect
+
+LazyFym.@register env x0  # necessary
+function test()
+    t2 = 0.1
+    x_at_t2 = LazyFym.@readable env sol(t2)
+    x_all = LazyFym.@readable env sol.u
+    _x_at_t2 = LazyFym.@raw env x_at_t2
+    @show x_at_t2
+    @show _x_at_t2
+    @show x_all == xs
+end
+test()
+nothing

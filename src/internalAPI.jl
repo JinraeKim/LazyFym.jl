@@ -139,7 +139,37 @@ macro register(env, x0)
             local env_index = LazyFym.index($(env), $(x0), 1:env_flatten_length)
             LazyFym.index(env::typeof($(env)), x0, _range) = env_index
             local env_index_nt, env_size_nt = LazyFym.preprocess($(env), $(x0))
-            LazyFym.preprocess(env::typeof($(env)), x0) = env_index_nt, env_size_nt
+            LazyFym.preprocess(env::typeof($(env))) = env_index_nt, env_size_nt
+            LazyFym.preprocess(env::typeof($(env)), x0) = LazyFym.preprocess($(env))
+        else
+            error("Invalid environment")
+        end
+    end
+    esc(ex)
+end
+
+macro readable(env, _x)
+    ex = quote
+        if typeof($(env)) <: Fym
+            local env_index_nt, env_size_nt = LazyFym.preprocess($(env))
+            if typeof($(_x)) <: Array{T, 1} where T <: Number
+                x = LazyFym.process($(_x), env_index_nt, env_size_nt)
+            elseif typeof($(_x)) <: Array{T, 1} where T<: AbstractArray
+                x = $(_x) |> Map(_x -> LazyFym.process(_x, env_index_nt, env_size_nt)) |> collect
+            else
+                error("Invalid input")
+            end
+        else
+            error("Invalid environment")
+        end
+    end
+    esc(ex)
+end
+
+macro raw(env, x)
+    ex = quote
+        if typeof($(env)) <: Fym
+            _x = LazyFym.raw($(env), $(x))
         else
             error("Invalid environment")
         end
