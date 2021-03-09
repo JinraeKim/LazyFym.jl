@@ -1,9 +1,10 @@
 using LazyFym
 using DifferentialEquations
-using Plots
+# using Plots
 using Transducers
 using InfiniteArrays
 using LinearAlgebra
+using Setfield
 
 struct Env1 <: Fym
 end
@@ -26,7 +27,6 @@ LazyFym.initial_condition(env::Env1) = rand(2)
 LazyFym.initial_condition(env::Env21) = rand(5, 3)
 LazyFym.initial_condition(env::Env22) = rand(10)
 nestedenv = NestedEnv(Env1(), Env2(Env21(), Env22()))
-# nestedenv = Env2(Env21(), Env22())
 x0 = LazyFym.initial_condition(nestedenv)
 _x0 = LazyFym.raw(nestedenv, x0)
 
@@ -35,9 +35,6 @@ function f(x, p, t)
     dx21 = -p[2]*x.env2.env21
     dx22 = -p[3]*x.env2.env22
     (; env1 = dx1, env2 = (; env21 = dx21, env22 = dx22))
-    # dx21 = -p[2]*x.env21
-    # dx22 = -p[3]*x.env22
-    # (; env21=dx21, env22=dx22)
 end
 env_index_nt, env_size_nt = LazyFym.preprocess(nestedenv, x0)
 function _f(_x, p, t)
@@ -51,6 +48,15 @@ macro f_ode(f, env)
     end
     ex
 end
+function _my_macro(f, env::Fym)
+    x0 = LazyFym.initial_condition(env)
+    env_index_nt, env_size_nt = LazyFym.preprocess(env, x0)
+    return :((_x, p, t) -> LazyFym.raw($env, $f(LazyFym.process(_x, $env_index_nt, $env_size_nt), p, t)))
+end
+function ode(prob::ODEProblem, env)
+    ex = :()
+    eval(ex)
+end
 macro raw(x0, env)
     :(LazyFym.raw($env, $x0))
 end
@@ -62,15 +68,28 @@ macro process(_x0, env)
     end
     ex
 end
-tspan = (0.0, 10.0)
-prob = ODEProblem(_f, _x0, tspan)
+macro ode(ex, env)
+    :($(ex.args[1])(@f_ode($(ex.args[2]), $env), @raw($(ex.args[3]), $env), $(ex.args[4])))
+end
+function DifferentialEquations.ODEProblem(env::Fym, f, x0, tspan; kwargs...)
+    env_index_nt, env_size_nt = LazyFym.preprocess(env, x0)
+    _x0 = LazyFym.raw(env, x0)
+    _f(_x, p, t) = LazyFym.raw(env, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
+    ODEProblem(_f, _x0, tspan; kwargs...)
+end
+# function DifferentialEquations.solve(env::Fym, prob, solver; kwargs...)
+#     sol = DifferentialEquations.solve(prob, solver; kwargs...)
+# end
+function my_process(env::Fym, dummy)
+    x0 = dummy == nothing ? error("Give an example (dummy) to understand the structure of $(typeof(env))") : dummy
+    env_index_nt, env_size_nt = LazyFym.preprocess(env, x0)
+    process(_x) = LazyFym.process(_x, env_index_nt, env_size_nt)
+end
+t0 = 0.0
+tf = 10.0
+tspan = (t0, tf)
 p0 = [1.0, 2, 3]
-saved_values = SavedValues(Float64, NamedTuple)
-cb_save = SavingCallback((u, t, integrator) -> (; u=u, p=integrator.p), saved_values, saveat=0:0.01:100)
-terminate_condition(u, t, integrator) = norm(u) - 1e-3  # == 0
-terminate_affect!(integrator) = terminate!(integrator)
-cb_terminate = ContinuousCallback(terminate_condition, terminate_affect!)
-cb_set = CallbackSet(cb_save, cb_terminate)
-@time sol = solve(prob, Tsit5(); p=p0, callback=cb_set)
-@time xs = sol.u |> Map(_x -> LazyFym.process(_x, env_index_nt, env_size_nt)) |> Map(postprocess) |> collect
-plot(sol)
+prob = ODEProblem(nestedenv, f, x0, tspan)
+sol = solve(prob, Tsit5(); p=p0, saveat=t0:0.01:tf)
+process = my_process(nestedenv, x0)
+xs = @show sol.u |> Map(process) |> collect
