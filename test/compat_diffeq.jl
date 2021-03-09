@@ -40,14 +40,29 @@ function f(x, p, t)
     # (; env21=dx21, env22=dx22)
 end
 env_index_nt, env_size_nt = LazyFym.preprocess(nestedenv, x0)
-_f(_x, p, t) = LazyFym.raw(nestedenv, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
-# function _f(_x, p, t)
-#     dx1 = -p[1]*_x[1:1]
-#     dx21 = -p[2]*_x[2:16]
-#     dx22 = -p[3]*_x[17:26]
-#     vcat(dx1, dx21, dx22)
-# end
-tspan = (0.0, 100.0)
+function _f(_x, p, t)
+    LazyFym.raw(nestedenv, f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
+end
+macro f_ode(f, env)
+    ex = quote
+        x0 = LazyFym.initial_condition($env)
+        env_index_nt, env_size_nt = LazyFym.preprocess($env, x0)
+        (_x, p, t) -> LazyFym.raw($env, $f(LazyFym.process(_x, env_index_nt, env_size_nt), p, t))
+    end
+    ex
+end
+macro raw(x0, env)
+    :(LazyFym.raw($env, $x0))
+end
+macro process(_x0, env)
+    ex = quote
+        x0 = LazyFym.initial_condition($env)
+        env_index_nt, env_size_nt = LazyFym.preprocess($env, x0)
+        LazyFym.process($_x0, env_index_nt, env_size_nt)
+    end
+    ex
+end
+tspan = (0.0, 10.0)
 prob = ODEProblem(_f, _x0, tspan)
 p0 = [1.0, 2, 3]
 saved_values = SavedValues(Float64, NamedTuple)
