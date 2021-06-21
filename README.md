@@ -1,3 +1,6 @@
+**NOTICE: this package is deprecated. For the successor of this, see [FilghtSims.jl](https://github.com/JinraeKim/FlightSims.jl).**
+
+
 # LazyFym
 **LazyFym** is a general-purpose simulator for dynamical systems.
 ## Notes
